@@ -1,0 +1,57 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: sttiten_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-sttiten}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sttiten_pass}
+      POSTGRES_DB: ${POSTGRES_DB:-sttiten_movies}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-sttiten}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: sttiten_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: sttiten_backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-sttiten}:${POSTGRES_PASSWORD:-sttiten_pass}@db:5432/${POSTGRES_DB:-sttiten_movies}
+      REDIS_URL: redis://redis:6379/0
+      TMDB_API_KEY: ${TMDB_API_KEY}
+      SUBDL_API_KEY: ${SUBDL_API_KEY}
+      OPENSUBTITLES_API_KEY: ${OPENSUBTITLES_API_KEY}
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+volumes:
+  postgres_data:
+  redis_data:

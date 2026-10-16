@@ -72,4 +72,10 @@ class TMDBService:
         return await self._get("search/multi", query=query, page=page)
 
 
+
+
+    async def search_series(self, query: str, page: int = 1):
+        return await self._get("search/tv", query=query, page=page)
+
+
 tmdb_service = TMDBService()

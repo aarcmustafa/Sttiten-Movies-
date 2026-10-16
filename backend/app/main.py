@@ -15,21 +15,21 @@ logger = logging.getLogger("sttiten")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info(f"Starting {settings.APP_NAME}")
-    if not settings.TMDB_API_KEY:
-        logger.warning("TMDB_API_KEY missing")
-    else:
+    if settings.TMDB_API_KEY:
         logger.info("TMDB_API_KEY set")
-    if not settings.SUBDL_API_KEY:
-        logger.warning("SUBDL_API_KEY missing")
     else:
+        logger.warning("TMDB_API_KEY missing")
+    if settings.SUBDL_API_KEY:
         logger.info("SUBDL_API_KEY set")
+    else:
+        logger.warning("SUBDL_API_KEY missing")
     yield
     logger.info("Shutting down")
 
 
 app = FastAPI(
     title=settings.APP_NAME,
-    description="API for Sttiten Movies",
+    description="API for Sttiten Movies - Arabic movie & series data",
     version="0.1.0",
     docs_url="/docs",
     redoc_url="/redoc",
@@ -44,10 +44,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from app.api.routes import movies, series
+
+app.include_router(movies.router, prefix=settings.API_V1_PREFIX)
+app.include_router(series.router, prefix=settings.API_V1_PREFIX)
+
 
 @app.get("/", tags=["Root"])
 async def root():
-    return {"app": settings.APP_NAME, "version": "0.1.0", "status": "running", "docs": "/docs"}
+    return {
+        "app": settings.APP_NAME,
+        "version": "0.1.0",
+        "status": "running",
+        "docs": "/docs",
+    }
 
 
 @app.get("/health", tags=["Root"])

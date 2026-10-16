@@ -44,8 +44,11 @@ class TMDBService:
             except httpx.RequestError as e:
                 raise TMDBError(f"Network error: {e}") from e
 
-    async def get_popular_movies(self, page: int = 1):
-        return await self._get("movie/popular", page=page)
+    async def get_popular_movies(self, page: int = 1, language: str = None):
+        kwargs = {"page": page}
+        if language:
+            kwargs["language"] = language
+        return await self._get("movie/popular", **kwargs)
 
     async def get_trending_movies(self, time_window: str = "week"):
         return await self._get(f"trending/movie/{time_window}")

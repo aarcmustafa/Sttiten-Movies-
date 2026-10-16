@@ -1,0 +1,132 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""سكريبت توليد هيكل مشروع Sttiten Movies"""
+
+import os
+from pathlib import Path
+
+PROJECT_NAME = "Sttiten-Movies"
+
+DIRECTORIES = [
+    ".github/workflows",
+    "backend/app",
+    "backend/app/models",
+    "backend/app/schemas",
+    "backend/app/api",
+    "backend/app/api/routes",
+    "backend/app/services",
+    "backend/app/core",
+    "backend/app/utils",
+    "backend/tests",
+    "frontend/lib",
+    "frontend/lib/core",
+    "frontend/lib/features",
+    "frontend/lib/features/movies",
+    "frontend/lib/features/movies/models",
+    "frontend/lib/features/movies/providers",
+    "frontend/lib/features/movies/screens",
+    "frontend/lib/features/movies/widgets",
+    "frontend/lib/features/series",
+    "frontend/lib/features/series/models",
+    "frontend/lib/features/series/providers",
+    "frontend/lib/features/series/screens",
+    "frontend/lib/features/series/widgets",
+    "frontend/lib/features/auth",
+    "frontend/lib/features/auth/screens",
+    "frontend/lib/features/auth/providers",
+    "frontend/lib/features/subtitles",
+    "frontend/lib/features/subtitles/screens",
+    "frontend/lib/features/subtitles/providers",
+    "frontend/lib/shared",
+    "frontend/lib/shared/widgets",
+    "frontend/lib/shared/utils",
+    "docs",
+    "scripts",
+]
+
+FILES = [
+    ".github/workflows/ci.yml",
+    ".gitignore",
+    "LICENSE",
+    "README.md",
+    "docker-compose.yml",
+    "backend/requirements.txt",
+    "backend/Dockerfile",
+    "backend/.env.example",
+    "backend/README.md",
+    "backend/app/__init__.py",
+    "backend/app/main.py",
+    "backend/app/config.py",
+    "backend/app/database.py",
+    "backend/app/models/__init__.py",
+    "backend/app/models/movie.py",
+    "backend/app/models/series.py",
+    "backend/app/models/user.py",
+    "backend/app/schemas/__init__.py",
+    "backend/app/schemas/movie.py",
+    "backend/app/schemas/series.py",
+    "backend/app/schemas/user.py",
+    "backend/app/api/__init__.py",
+    "backend/app/api/deps.py",
+    "backend/app/api/routes/__init__.py",
+    "backend/app/api/routes/movies.py",
+    "backend/app/api/routes/series.py",
+    "backend/app/api/routes/subtitles.py",
+    "backend/app/api/routes/auth.py",
+    "backend/app/services/__init__.py",
+    "backend/app/services/tmdb.py",
+    "backend/app/services/subdl.py",
+    "backend/app/services/opensubtitles.py",
+    "backend/app/core/__init__.py",
+    "backend/app/core/security.py",
+    "backend/app/utils/__init__.py",
+    "backend/tests/__init__.py",
+    "backend/tests/test_movies.py",
+    "backend/tests/test_series.py",
+    "frontend/pubspec.yaml",
+    "frontend/.gitignore",
+    "frontend/README.md",
+    "frontend/lib/main.dart",
+    "frontend/lib/app.dart",
+    "frontend/lib/core/constants.dart",
+    "frontend/lib/core/theme.dart",
+    "frontend/lib/core/api_client.dart",
+    "frontend/lib/features/movies/models/movie.dart",
+    "frontend/lib/features/movies/providers/movies_provider.dart",
+    "frontend/lib/features/movies/screens/movies_screen.dart",
+    "frontend/lib/features/movies/screens/movie_details_screen.dart",
+    "frontend/lib/features/movies/widgets/movie_card.dart",
+    "frontend/lib/features/series/models/series.dart",
+    "frontend/lib/features/series/providers/series_provider.dart",
+    "frontend/lib/features/series/screens/series_screen.dart",
+    "frontend/lib/features/series/screens/series_details_screen.dart",
+    "frontend/lib/features/series/widgets/series_card.dart",
+    "frontend/lib/features/auth/screens/login_screen.dart",
+    "frontend/lib/features/auth/screens/register_screen.dart",
+    "frontend/lib/features/auth/providers/auth_provider.dart",
+    "frontend/lib/features/subtitles/screens/subtitles_screen.dart",
+    "frontend/lib/features/subtitles/providers/subtitles_provider.dart",
+    "frontend/lib/shared/widgets/loading_indicator.dart",
+    "frontend/lib/shared/utils/validators.dart",
+    "docs/architecture.md",
+    "docs/api.md",
+    "docs/setup.md",
+    "scripts/setup.sh",
+    "scripts/seed_db.py",
+]
+
+def create_project():
+    root = Path.cwd() / PROJECT_NAME
+    if not root.exists():
+        root.mkdir(parents=True)
+    for d in DIRECTORIES:
+        (root / d).mkdir(parents=True, exist_ok=True)
+    for f in FILES:
+        fp = root / f
+        fp.parent.mkdir(parents=True, exist_ok=True)
+        if not fp.exists():
+            fp.touch()
+
+if __name__ == "__main__":
+    create_project()
+    print("✅ Scaffold done.")

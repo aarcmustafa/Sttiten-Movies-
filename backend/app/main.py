@@ -23,6 +23,10 @@ async def lifespan(app: FastAPI):
         logger.info("SUBDL_API_KEY set")
     else:
         logger.warning("SUBDL_API_KEY missing")
+    if settings.OPENSUBTITLES_API_KEY:
+        logger.info("OPENSUBTITLES_API_KEY set")
+    else:
+        logger.warning("OPENSUBTITLES_API_KEY missing")
     yield
     logger.info("Shutting down")
 
@@ -30,7 +34,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title=settings.APP_NAME,
     description="API for Sttiten Movies - Arabic movie & series data",
-    version="0.1.0",
+    version="0.2.0",
     docs_url="/docs",
     redoc_url="/redoc",
     lifespan=lifespan,
@@ -44,17 +48,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-from app.api.routes import movies, series
+from app.api.routes import movies, series, subtitles
 
 app.include_router(movies.router, prefix=settings.API_V1_PREFIX)
 app.include_router(series.router, prefix=settings.API_V1_PREFIX)
+app.include_router(subtitles.router, prefix=settings.API_V1_PREFIX)
 
 
 @app.get("/", tags=["Root"])
 async def root():
     return {
         "app": settings.APP_NAME,
-        "version": "0.1.0",
+        "version": "0.2.0",
         "status": "running",
         "docs": "/docs",
     }

@@ -1,12 +1,15 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/api_client.dart';
 import '../../../core/constants.dart';
 import '../../../shared/widgets/loading_indicator.dart';
+import '../../favorites/providers/favorites_provider.dart';
 import '../models/movie.dart';
 import '../widgets/movie_card.dart';
+import '../../video/video_player_screen.dart';
 
 class MovieDetailsScreen extends StatefulWidget {
   final int movieId;
@@ -241,7 +244,6 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
                     const SizedBox(height: 24),
                   ],
 
-                  // ===== Watch Providers =====
                   if (m.watchProviders.isNotEmpty) ...[
                     const _SectionTitle('متوفر على'),
                     const SizedBox(height: 12),
@@ -253,7 +255,28 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
                     const SizedBox(height: 24),
                   ],
 
-                  // ===== Action Buttons (Trailer + Subtitles) =====
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => VideoPlayerScreen(title: m.title),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.play_arrow_rounded, size: 28),
+                      label: const Text('مشاهدة الآن', style: TextStyle(fontSize: 16)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: Colors.black,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  
                   Row(
                     children: [
                       if (trailerKey != null) ...[
@@ -281,11 +304,45 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
                           ),
                         ),
                       ),
+                      const SizedBox(width: 10),
+                      Consumer<FavoritesProvider>(
+                        builder: (context, favProv, _) {
+                          final isFav = favProv.isFavorite(m.id, _isSeries ? 'tv' : 'movie');
+                          return GestureDetector(
+                            onTap: () async {
+                              final wasFav = isFav;
+                              final success = await favProv.toggleFavorite(m);
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(success
+                                        ? (wasFav ? 'تمت الإزالة من المفضلة' : 'تمت الإضافة إلى المفضلة')
+                                        : 'حدث خطأ، حاول مجدداً'),
+                                    backgroundColor: wasFav ? AppColors.error : AppColors.success,
+                                    duration: const Duration(seconds: 2),
+                                  ),
+                                );
+                              }
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                color: isFav ? AppColors.primary.withOpacity(0.2) : AppColors.surfaceLight,
+                                borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+                                border: isFav ? Border.all(color: AppColors.primary, width: 1) : null,
+                              ),
+                              child: Icon(
+                                isFav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                                color: isFav ? AppColors.primary : AppColors.textPrimary,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
                     ],
                   ),
                   const SizedBox(height: 28),
 
-                  // ===== Seasons (للمسلسلات فقط) =====
                   if (_isSeries && _seasons.isNotEmpty) ...[
                     const _SectionTitle('المواسم'),
                     const SizedBox(height: 12),
@@ -300,7 +357,6 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
                     const SizedBox(height: 28),
                   ],
 
-                  // ===== Cast =====
                   if (m.cast.isNotEmpty) ...[
                     const _SectionTitle('طاقم العمل'),
                     const SizedBox(height: 12),
@@ -315,7 +371,6 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
                     const SizedBox(height: 28),
                   ],
 
-                  // ===== Recommendations (أفلام مشابهة) =====
                   if (m.recommendations.isNotEmpty) ...[
                     const _SectionTitle('أعمال مشابهة'),
                     const SizedBox(height: 12),
@@ -333,7 +388,6 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
                           return MovieCard(
                             movie: rec,
                             onTap: () {
-                              // استبدال الشاشة الحالية بالفيلم الموصى به
                               Navigator.pushReplacement(
                                 context,
                                 MaterialPageRoute(
@@ -359,7 +413,6 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
     );
   }
 
-  // ===== Helpers =====
   Widget _metaItem(IconData icon, String text, {Color? color}) {
     return Row(
       mainAxisSize: MainAxisSize.min,

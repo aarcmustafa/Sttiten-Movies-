@@ -14,15 +14,30 @@ class MoviesScreen extends StatefulWidget {
 }
 
 class _MoviesScreenState extends State<MoviesScreen> {
+  final ScrollController _scrollController = ScrollController();
+
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_onScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider = context.read<MoviesProvider>();
       if (provider.trendingMovies.isEmpty && provider.popularMovies.isEmpty) {
         provider.loadInitial();
       }
     });
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 500) {
+      context.read<MoviesProvider>().loadPopular();
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   @override
@@ -49,6 +64,7 @@ class _MoviesScreenState extends State<MoviesScreen> {
             backgroundColor: AppColors.surface,
             onRefresh: () => provider.refreshAll(),
             child: CustomScrollView(
+          controller: _scrollController,
               slivers: [
                 // ============ Hero Banner ============
                 if (provider.heroMovie != null)
@@ -173,6 +189,18 @@ class _HeroBanner extends StatelessWidget {
   final VoidCallback onTap;
 
   const _HeroBanner({required this.movie, required this.onTap});
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 500) {
+      context.read<MoviesProvider>().loadPopular();
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {

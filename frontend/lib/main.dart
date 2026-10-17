@@ -2,12 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'core/theme.dart';
-import 'core/main_scaffold.dart';
+import 'core/device_id.dart';
+import 'features/splash/splash_screen.dart';
 import 'features/movies/providers/movies_provider.dart';
 import 'features/series/providers/series_provider.dart';
+import 'features/favorites/providers/favorites_provider.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // تجهيز بصمة الجهاز قبل فتح التطبيق
+  await DeviceIdManager.getDeviceId();
+
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
@@ -30,6 +36,7 @@ class SttitenMoviesApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => MoviesProvider()),
         ChangeNotifierProvider(create: (_) => SeriesProvider()),
+        ChangeNotifierProvider(create: (_) => FavoritesProvider()),
       ],
       child: MaterialApp(
         title: 'Sttiten Movies',
@@ -43,7 +50,7 @@ class SttitenMoviesApp extends StatelessWidget {
             child: child ?? const SizedBox.shrink(),
           );
         },
-        home: const MainScaffold(),
+        home: const SplashScreen(), // <--- الشاشة الأولى الآن هي الترحيبية
       ),
     );
   }

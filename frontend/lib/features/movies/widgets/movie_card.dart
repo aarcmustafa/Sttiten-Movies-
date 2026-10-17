@@ -4,7 +4,7 @@ import 'package:shimmer/shimmer.dart';
 import '../../../core/constants.dart';
 import '../models/movie.dart';
 
-class MovieCard extends StatelessWidget {
+class MovieCard extends StatefulWidget {
   final Movie movie;
   final VoidCallback? onTap;
   final double? width;
@@ -19,117 +19,116 @@ class MovieCard extends StatelessWidget {
   });
 
   @override
+  State<MovieCard> createState() => _MovieCardState();
+}
+
+class _MovieCardState extends State<MovieCard> {
+  bool _isFocused = false;
+
+  @override
   Widget build(BuildContext context) {
-    final w = width ?? AppSizes.cardWidth;
-    final h = height ?? AppSizes.cardHeight;
+    final w = widget.width ?? AppSizes.cardWidth;
+    final h = widget.height ?? AppSizes.cardHeight;
 
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: w,
-        margin: const EdgeInsets.only(left: AppSizes.paddingM),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ===== Poster with overlay =====
-            Hero(
-              tag: 'poster_${movie.id}',
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-                child: Stack(
-                  children: [
-                    // Poster
-                    SizedBox(
-                      width: w,
-                      height: h,
-                      child: movie.posterUrl.isEmpty
-                          ? _placeholder(w, h)
-                          : CachedNetworkImage(
-                              imageUrl: movie.posterUrl,
-                              fit: BoxFit.cover,
-                              placeholder: (_, __) => _shimmer(w, h),
-                              errorWidget: (_, __, ___) => _placeholder(w, h),
+    return Focus(
+      onFocusChange: (focused) {
+        setState(() => _isFocused = focused);
+      },
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          width: w,
+          margin: const EdgeInsets.only(left: AppSizes.paddingM),
+          transform: Matrix4.identity()..scale(_isFocused ? 1.05 : 1.0),
+          transformAlignment: Alignment.center,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+            border: _isFocused ? Border.all(color: AppColors.primary, width: 3) : null,
+            boxShadow: _isFocused
+                ? [BoxShadow(color: AppColors.primary.withOpacity(0.5), blurRadius: 15, spreadRadius: 2)]
+                : [],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Hero(
+                tag: 'poster_${widget.movie.id}',
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+                  child: Stack(
+                    children: [
+                      SizedBox(
+                        width: w,
+                        height: h,
+                        child: widget.movie.posterUrl.isEmpty
+                            ? _placeholder(w, h)
+                            : CachedNetworkImage(
+                                imageUrl: widget.movie.posterUrl,
+                                fit: BoxFit.cover,
+                                placeholder: (_, __) => _shimmer(w, h),
+                                errorWidget: (_, __, ___) => _placeholder(w, h),
+                              ),
+                      ),
+                      Positioned.fill(
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                Colors.transparent,
+                                Colors.black.withOpacity(0.0),
+                                Colors.black.withOpacity(0.75),
+                              ],
+                              stops: const [0.5, 0.7, 1.0],
                             ),
-                    ),
-
-                    // Bottom gradient
-                    Positioned.fill(
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.transparent,
-                              Colors.black.withOpacity(0.0),
-                              Colors.black.withOpacity(0.75),
-                            ],
-                            stops: const [0.5, 0.7, 1.0],
                           ),
                         ),
                       ),
-                    ),
-
-                    // Rating badge
-                    if (movie.voteAverage > 0)
-                      Positioned(
-                        top: 8,
-                        right: 8,
-                        child: _ratingBadge(),
-                      ),
-
-                    // Media type badge (TV)
-                    if (movie.isSeries)
-                      Positioned(
-                        top: 8,
-                        left: 8,
-                        child: _tvBadge(),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 8),
-
-            // ===== Title =====
-            Padding(
-              padding: const EdgeInsets.only(right: 2, left: 2),
-              child: Text(
-                movie.title,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                  height: 1.3,
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 2),
-
-            // ===== Year =====
-            if (movie.year.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(right: 2, left: 2),
-                child: Text(
-                  movie.year,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: AppColors.textTertiary,
-                    fontWeight: FontWeight.w500,
+                      if (widget.movie.voteAverage > 0)
+                        Positioned(top: 8, right: 8, child: _ratingBadge()),
+                      if (widget.movie.isSeries)
+                        Positioned(top: 8, left: 8, child: _tvBadge()),
+                    ],
                   ),
                 ),
               ),
-          ],
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.only(right: 2, left: 2),
+                child: Text(
+                  widget.movie.title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: _isFocused ? AppColors.primaryLight : AppColors.textPrimary,
+                    height: 1.3,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 2),
+              if (widget.movie.year.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(right: 2, left: 2),
+                  child: Text(
+                    widget.movie.year,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.textTertiary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  // ===== Rating badge =====
   Widget _ratingBadge() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
@@ -147,7 +146,7 @@ class MovieCard extends StatelessWidget {
           const Icon(Icons.star_rounded, size: 12, color: AppColors.rating),
           const SizedBox(width: 3),
           Text(
-            movie.rating,
+            widget.movie.rating,
             style: const TextStyle(
               color: Colors.white,
               fontSize: 11,
@@ -159,7 +158,6 @@ class MovieCard extends StatelessWidget {
     );
   }
 
-  // ===== TV badge =====
   Widget _tvBadge() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
@@ -178,7 +176,6 @@ class MovieCard extends StatelessWidget {
     );
   }
 
-  // ===== Shimmer =====
   Widget _shimmer(double w, double h) {
     return Shimmer.fromColors(
       baseColor: AppColors.surfaceLight,
@@ -191,7 +188,6 @@ class MovieCard extends StatelessWidget {
     );
   }
 
-  // ===== Placeholder =====
   Widget _placeholder(double w, double h) {
     return Container(
       width: w,
@@ -208,7 +204,6 @@ class MovieCard extends StatelessWidget {
   }
 }
 
-// ============ Horizontal List ============
 class MovieCardHorizontal extends StatelessWidget {
   final Movie movie;
   final VoidCallback? onTap;
@@ -228,7 +223,6 @@ class MovieCardHorizontal extends StatelessWidget {
         height: 110,
         child: Row(
           children: [
-            // Poster
             ClipRRect(
               borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
               child: SizedBox(
@@ -249,7 +243,6 @@ class MovieCardHorizontal extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 12),
-            // Info
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

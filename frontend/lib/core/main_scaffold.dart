@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../features/movies/screens/movies_screen.dart';
 import '../features/series/screens/series_screen.dart';
 import '../features/search/screens/search_screen.dart';
+import '../features/favorites/screens/favorites_screen.dart';
 import 'constants.dart';
 
 class MainScaffold extends StatefulWidget {
@@ -17,6 +18,7 @@ class _MainScaffoldState extends State<MainScaffold> {
   final List<Widget> _screens = const [
     MoviesScreen(),
     SeriesScreen(),
+    FavoritesScreen(),
     SearchScreen(),
   ];
 
@@ -46,11 +48,11 @@ class _MainScaffoldState extends State<MainScaffold> {
             selectedItemColor: AppColors.primaryLight,
             unselectedItemColor: AppColors.textTertiary,
             selectedLabelStyle: const TextStyle(
-              fontSize: 12,
+              fontSize: 11,
               fontWeight: FontWeight.w700,
             ),
             unselectedLabelStyle: const TextStyle(
-              fontSize: 12,
+              fontSize: 11,
               fontWeight: FontWeight.w600,
             ),
             type: BottomNavigationBarType.fixed,
@@ -64,6 +66,11 @@ class _MainScaffoldState extends State<MainScaffold> {
                 icon: Icon(Icons.tv_rounded),
                 activeIcon: Icon(Icons.tv_rounded, color: AppColors.primaryLight),
                 label: 'مسلسلات',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.favorite_border_rounded),
+                activeIcon: Icon(Icons.favorite_rounded, color: AppColors.primaryLight),
+                label: 'المفضلة',
               ),
               BottomNavigationBarItem(
                 icon: Icon(Icons.search_rounded),

@@ -121,7 +121,9 @@ class _SeriesScreenState extends State<SeriesScreen> {
   void _open(BuildContext context, int id) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => MovieDetailsScreen(movieId: id)),
+      MaterialPageRoute(
+        builder: (_) => MovieDetailsScreen(movieId: id, mediaType: 'tv'),
+      ),
     );
   }
 }

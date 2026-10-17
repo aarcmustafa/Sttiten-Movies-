@@ -1,75 +1,168 @@
-import 'package:flutter/material.dart';
+import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
+import 'constants.dart';
 
-class ApiConstants {
-  // ⚠️ رابط API الخاص بك
-  static const String baseUrl = 'https://sttiten-movies.onrender.com';
-  static const String apiPrefix = '/api/v1';
+class ApiClient {
+  static final ApiClient _instance = ApiClient._internal();
+  factory ApiClient() => _instance;
+  ApiClient._internal();
 
-  // Endpoints
-  static const String popularMovies = '$apiPrefix/movies/popular';
-  static const String trendingMovies = '$apiPrefix/movies/trending';
-  static const String topRatedMovies = '$apiPrefix/movies/top-rated';
-  static const String searchMovies = '$apiPrefix/movies/search';
-  static const String popularSeries = '$apiPrefix/series/popular';
-  static const String trendingSeries = '$apiPrefix/series/trending';
-  static const String searchSeries = '$apiPrefix/series/search';
-  static const String searchSubtitles = '$apiPrefix/subtitles/search';
-  static const String downloadSubtitle = '$apiPrefix/subtitles/download';
+  late final Dio _dio = _createDio();
 
-  // Image URLs
-  static const String tmdbImageBase = 'https://image.tmdb.org/t/p';
-  static const String posterSize = 'w500';
-  static const String backdropSize = 'w1280';
+  Dio _createDio() {
+    final dio = Dio(
+      BaseOptions(
+        baseUrl: ApiConstants.baseUrl,
+        connectTimeout: ApiConstants.connectTimeout,
+        receiveTimeout: ApiConstants.receiveTimeout,
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+      ),
+    );
 
-  static String posterUrl(String? path) =>
-      path == null ? '' : '$tmdbImageBase/$posterSize$path';
+    dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) {
+          if (kDebugMode) {
+            debugPrint('→ ${options.method} ${options.uri}');
+          }
+          handler.next(options);
+        },
+        onResponse: (response, handler) {
+          if (kDebugMode) {
+            debugPrint('← ${response.statusCode} ${response.requestOptions.uri}');
+          }
+          handler.next(response);
+        },
+        onError: (error, handler) {
+          if (kDebugMode) {
+            debugPrint('✗ ${error.requestOptions.uri} → ${error.message}');
+          }
+          handler.next(error);
+        },
+      ),
+    );
 
-  static String backdropUrl(String? path) =>
-      path == null ? '' : '$tmdbImageBase/$backdropSize$path';
+    return dio;
+  }
 
-  // Timeouts
-  static const Duration connectTimeout = Duration(seconds: 15);
-  static const Duration receiveTimeout = Duration(seconds: 30);
-}
+  Dio get dio => _dio;
 
-class AppColors {
-  // Primary palette
-  static const Color primary = Color(0xFF7C3AED);
-  static const Color primaryDark = Color(0xFF5B21B6);
-  static const Color primaryLight = Color(0xFFA78BFA);
-  static const Color accent = Color(0xFFEC4899);
+  // ============ Movies ============
 
-  // Backgrounds
-  static const Color background = Color(0xFF0A0A0F);
-  static const Color surface = Color(0xFF15151D);
-  static const Color surfaceLight = Color(0xFF1E1E2A);
-  static const Color card = Color(0xFF1A1A24);
+  Future<Map<String, dynamic>> getPopularMovies({
+    int page = 1,
+    String language = 'ar',
+  }) async {
+    final res = await _dio.get(
+      ApiConstants.popularMovies,
+      queryParameters: {'page': page, 'language': language},
+    );
+    return res.data as Map<String, dynamic>;
+  }
 
-  // Text
-  static const Color textPrimary = Color(0xFFFFFFFF);
-  static const Color textSecondary = Color(0xFFB8B8C7);
-  static const Color textTertiary = Color(0xFF6E6E80);
+  Future<Map<String, dynamic>> getTrendingMovies({
+    String timeWindow = 'week',
+  }) async {
+    final res = await _dio.get(
+      ApiConstants.trendingMovies,
+      queryParameters: {'time_window': timeWindow},
+    );
+    return res.data as Map<String, dynamic>;
+  }
 
-  // Status
-  static const Color success = Color(0xFF10B981);
-  static const Color error = Color(0xFFEF4444);
-  static const Color warning = Color(0xFFF59E0B);
-  static const Color rating = Color(0xFFFFB800);
-}
+  Future<Map<String, dynamic>> getTopRatedMovies({int page = 1}) async {
+    final res = await _dio.get(
+      ApiConstants.topRatedMovies,
+      queryParameters: {'page': page},
+    );
+    return res.data as Map<String, dynamic>;
+  }
 
-class AppSizes {
-  static const double radiusSmall = 8;
-  static const double radiusMedium = 12;
-  static const double radiusLarge = 20;
-  static const double radiusXL = 28;
+  Future<Map<String, dynamic>> searchMovies(String query, {int page = 1}) async {
+    final res = await _dio.get(
+      ApiConstants.searchMovies,
+      queryParameters: {'q': query, 'page': page},
+    );
+    return res.data as Map<String, dynamic>;
+  }
 
-  static const double paddingXS = 4;
-  static const double paddingS = 8;
-  static const double paddingM = 16;
-  static const double paddingL = 24;
-  static const double paddingXL = 32;
+  Future<Map<String, dynamic>> getMovieDetails(int id) async {
+    final res = await _dio.get('${ApiConstants.apiPrefix}/movies/$id');
+    return res.data as Map<String, dynamic>;
+  }
 
-  static const double cardWidth = 140;
-  static const double cardHeight = 210;
-  static const double heroHeight = 500;
+  // ============ Series ============
+
+  Future<Map<String, dynamic>> getPopularSeries({int page = 1}) async {
+    final res = await _dio.get(
+      ApiConstants.popularSeries,
+      queryParameters: {'page': page},
+    );
+    return res.data as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> getTrendingSeries({
+    String timeWindow = 'week',
+  }) async {
+    final res = await _dio.get(
+      ApiConstants.trendingSeries,
+      queryParameters: {'time_window': timeWindow},
+    );
+    return res.data as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> searchSeries(String query, {int page = 1}) async {
+    final res = await _dio.get(
+      ApiConstants.searchSeries,
+      queryParameters: {'q': query, 'page': page},
+    );
+    return res.data as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> getSeriesDetails(int id) async {
+    final res = await _dio.get('${ApiConstants.apiPrefix}/series/$id');
+    return res.data as Map<String, dynamic>;
+  }
+
+  // ============ Subtitles ============
+
+  Future<Map<String, dynamic>> searchSubtitles({
+    required int tmdbId,
+    String mediaType = 'movie',
+    String language = 'AR',
+    int? seasonNumber,
+    int? episodeNumber,
+  }) async {
+    final params = <String, dynamic>{
+      'tmdb_id': tmdbId,
+      'media_type': mediaType,
+      'language': language,
+    };
+    if (seasonNumber != null) params['season_number'] = seasonNumber;
+    if (episodeNumber != null) params['episode_number'] = episodeNumber;
+
+    final res = await _dio.get(
+      ApiConstants.searchSubtitles,
+      queryParameters: params,
+    );
+    return res.data as Map<String, dynamic>;
+  }
+
+  Future<List<int>> downloadSubtitle({
+    required String subtitlePath,
+    String filename = 'subtitle.zip',
+  }) async {
+    final res = await _dio.post(
+      ApiConstants.downloadSubtitle,
+      data: {
+        'subtitle_path': subtitlePath,
+        'filename': filename,
+      },
+      options: Options(responseType: ResponseType.bytes),
+    );
+    return res.data as List<int>;
+  }
 }

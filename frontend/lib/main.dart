@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'core/theme.dart';
+import 'core/main_scaffold.dart';
 import 'features/movies/providers/movies_provider.dart';
-import 'features/movies/screens/movies_screen.dart';
+import 'features/series/providers/series_provider.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,6 +29,7 @@ class SttitenMoviesApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => MoviesProvider()),
+        ChangeNotifierProvider(create: (_) => SeriesProvider()),
       ],
       child: MaterialApp(
         title: 'Sttiten Movies',
@@ -41,7 +43,7 @@ class SttitenMoviesApp extends StatelessWidget {
             child: child ?? const SizedBox.shrink(),
           );
         },
-        home: const MoviesScreen(),
+        home: const MainScaffold(),
       ),
     );
   }

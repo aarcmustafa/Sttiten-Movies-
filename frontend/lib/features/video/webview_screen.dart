@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -19,16 +20,69 @@ class _WebViewScreenState extends State<WebViewScreen> {
   bool _isLoading = true;
   bool _showTimeoutHelp = false;
   Timer? _timeoutTimer;
+  String _initialHost = '';
 
-  // User-Agent حقيقي يتنكر كأنه Chrome على Android
-  // هذا يحل 90% من مشاكل المواقع التي تحظر WebView
+  // User-Agent حقيقي (يتنكر كأنه Chrome على Android)
   static const String _realUserAgent =
       'Mozilla/5.0 (Linux; Android 13; SM-G991B) AppleWebKit/537.36 '
       '(KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36';
 
+  // قائمة النطاقات المحظورة (الإعلانات وصفحات البحث)
+  static const List<String> _blockedHosts = [
+    'google.com',
+    'google.co',
+    'bing.com',
+    'yahoo.com',
+    'duckduckgo.com',
+    'yandex.com',
+    'baidu.com',
+    'play.google.com',
+    'apps.apple.com',
+    'instagram.com',
+    'facebook.com',
+    'twitter.com',
+    'tiktok.com',
+    'doubleclick.net',
+    'googlesyndication.com',
+    'googletagmanager.com',
+    'google-analytics.com',
+    'propellerads.com',
+    'popads.net',
+    'adsterra.com',
+    'onclickads.net',
+  ];
+
+  bool _isBlocked(String url) {
+    try {
+      final uri = Uri.parse(url);
+      final host = uri.host.toLowerCase();
+      if (host.isEmpty) return false;
+      
+      for (final blocked in _blockedHosts) {
+        if (host == blocked || host.endsWith('.$blocked')) return true;
+      }
+      
+      // منع الروابط التي تحتوي على كلمات بحث
+      final path = uri.path.toLowerCase();
+      if (path.contains('/search') && !_initialHost.contains(uri.host)) return true;
+      
+      return false;
+    } catch (_) {
+      return false;
+    }
+  }
+
   @override
   void initState() {
     super.initState();
+    // السماح بالتدوير الحر
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
+    _initialHost = Uri.parse(widget.url).host;
     _initializeController();
   }
 
@@ -46,16 +100,21 @@ class _WebViewScreenState extends State<WebViewScreen> {
           onPageFinished: (_) {
             if (mounted) setState(() => _isLoading = false);
             _cancelTimeout();
+            _injectAntiRedirectScript();
           },
           onWebResourceError: (error) {
             if (mounted) setState(() => _isLoading = false);
             _cancelTimeout();
           },
           onNavigationRequest: (request) {
-            // منع فتح روابط المتاجر والإعلانات
+            // منع أي رابط محظور
+            if (_isBlocked(request.url)) {
+              debugPrint('🚫 Blocked navigation: ${request.url}');
+              return NavigationDecision.prevent;
+            }
+            // منع الروابط التي تفتح متجر التطبيقات
             if (request.url.startsWith('intent://') ||
-                request.url.contains('play.google.com') ||
-                request.url.contains('apps.apple.com') ||
+                request.url.startsWith('market://') ||
                 request.url.contains('about:blank')) {
               return NavigationDecision.prevent;
             }
@@ -66,9 +125,58 @@ class _WebViewScreenState extends State<WebViewScreen> {
       ..loadRequest(Uri.parse(widget.url));
   }
 
+  // حقن جافاسكريبت لمنع الإعلانات والنوافذ المنبثقة
+  Future<void> _injectAntiRedirectScript() async {
+    try {
+      await _controller.runJavaScript('''
+        (function() {
+          // 1. منع window.open والنوافذ المنبثقة
+          window.open = function() { return null; };
+          window.alert = function() { return null; };
+          window.confirm = function() { return false; };
+          
+          // 2. اعتراض أي نقرة تذهب إلى موقع خارجي
+          document.addEventListener('click', function(e) {
+            var target = e.target.closest('a');
+            if (target && target.href) {
+              var href = target.href.toLowerCase();
+              if (href.includes('google') || href.includes('bing') || 
+                  href.includes('yahoo') || href.includes('play.google')) {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+              }
+            }
+          }, true);
+          
+          // 3. إخفاء الإعلانات باستمرار
+          setInterval(function() {
+            var adSelectors = [
+              'iframe[src*="ad"]', 'iframe[src*="banner"]',
+              'div[class*="ad-"]', 'div[id*="ad-"]', 
+              '.adsbygoogle', 'a[href*="betting"]',
+              'div[class*="overlay"]', 'div[class*="popup"]',
+              'div[class*="modal"]', 'ins.adsbygoogle'
+            ];
+            adSelectors.forEach(function(sel) {
+              document.querySelectorAll(sel).forEach(function(el) {
+                if (el.tagName !== 'VIDEO' && el.tagName !== 'IFRAME' || 
+                    (el.tagName === 'IFRAME' && el.src && !el.src.includes('vidsrc') && !el.src.includes('embed'))) {
+                  el.style.display = 'none';
+                }
+              });
+            });
+          }, 500);
+        })();
+      ''');
+    } catch (e) {
+      debugPrint('JS injection error: $e');
+    }
+  }
+
   void _startTimeout() {
     _cancelTimeout();
-    _timeoutTimer = Timer(const Duration(seconds: 15), () {
+    _timeoutTimer = Timer(const Duration(seconds: 20), () {
       if (mounted && _isLoading) {
         setState(() => _showTimeoutHelp = true);
       }
@@ -92,6 +200,11 @@ class _WebViewScreenState extends State<WebViewScreen> {
 
   @override
   void dispose() {
+    // إعادة قفل الشاشة على العمودي
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
     _timeoutTimer?.cancel();
     super.dispose();
   }
@@ -163,22 +276,17 @@ class _WebViewScreenState extends State<WebViewScreen> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.wifi_off_rounded,
-                              color: AppColors.warning, size: 64),
+                          const Icon(Icons.wifi_off_rounded, color: AppColors.warning, size: 64),
                           const SizedBox(height: 16),
                           const Text(
                             'المصدر يبدو بطيئاً أو محظوراً',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold),
+                            style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
                             textAlign: TextAlign.center,
                           ),
                           const SizedBox(height: 8),
                           const Text(
-                            'يمكنك فتح الرابط في المتصفح الخارجي، أو تجربة مصدر آخر من القائمة.',
-                            style: TextStyle(
-                                color: AppColors.textSecondary, fontSize: 14),
+                            'يمكنك فتح الرابط في المتصفح الخارجي، أو تجربة مصدر آخر.',
+                            style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
                             textAlign: TextAlign.center,
                           ),
                           const SizedBox(height: 24),

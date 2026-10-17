@@ -101,7 +101,7 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
       );
     }
 
-    final m = _movie;
+    final m = _movie!;
     final trailerKey = m.videos.isNotEmpty ? m.videos.first.key : null;
 
     return Scaffold(
@@ -457,10 +457,10 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
         Navigator.push(
           context,
           FadeSlidePageRoute(child: EpisodesScreen(
-              seriesId: _movie.id,
+              seriesId: _movie!.id,
               seasonNumber: number,
               seasonName: name,
-              seriesTitle: _movie.title,),
+              seriesTitle: _movie!.title,),
           ),
         );
       },

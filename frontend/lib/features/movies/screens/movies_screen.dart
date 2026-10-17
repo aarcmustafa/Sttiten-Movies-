@@ -54,7 +54,7 @@ class _MoviesScreenState extends State<MoviesScreen> {
                 if (provider.heroMovie != null)
                   _HeroBanner(
                     movie: provider.heroMovie!,
-                    onTap: () => _openDetails(context, provider.heroMovie!.id),
+                    onTap: () => _open(context, provider.heroMovie!.id),
                   ),
 
                 // ============ Trending ============
@@ -76,7 +76,7 @@ class _MoviesScreenState extends State<MoviesScreen> {
                           final movie = provider.trendingMovies[i];
                           return MovieCard(
                             movie: movie,
-                            onTap: () => _openDetails(context, movie.id),
+                            onTap: () => _open(context, movie.id),
                           );
                         },
                       ),
@@ -113,7 +113,7 @@ class _MoviesScreenState extends State<MoviesScreen> {
                                 final movie = provider.popularMovies[i];
                                 return MovieCard(
                                   movie: movie,
-                                  onTap: () => _openDetails(context, movie.id),
+                                  onTap: () => _open(context, movie.id),
                                 );
                               },
                             ),
@@ -140,7 +140,7 @@ class _MoviesScreenState extends State<MoviesScreen> {
                           final movie = provider.topRatedMovies[i];
                           return MovieCard(
                             movie: movie,
-                            onTap: () => _openDetails(context, movie.id),
+                            onTap: () => _open(context, movie.id),
                           );
                         },
                       ),
@@ -157,10 +157,12 @@ class _MoviesScreenState extends State<MoviesScreen> {
     );
   }
 
-  void _openDetails(BuildContext context, int id) {
+  void _open(BuildContext context, int id) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => MovieDetailsScreen(movieId: id)),
+      MaterialPageRoute(
+        builder: (_) => MovieDetailsScreen(movieId: id, mediaType: 'movie'),
+      ),
     );
   }
 }

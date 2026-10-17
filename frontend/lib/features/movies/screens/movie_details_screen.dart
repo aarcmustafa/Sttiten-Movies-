@@ -1,14 +1,16 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/api_client.dart';
 import '../../../core/constants.dart';
 import '../../../shared/widgets/loading_indicator.dart';
 import '../models/movie.dart';
+import '../widgets/movie_card.dart';
 
 class MovieDetailsScreen extends StatefulWidget {
   final int movieId;
-  final String mediaType; // 'movie' أو 'tv'
+  final String mediaType;
   const MovieDetailsScreen({
     super.key,
     required this.movieId,
@@ -47,7 +49,6 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
         data = await _api.getMovieDetails(widget.movieId);
       }
 
-      // استخراج المواسم إن كان مسلسلًا
       final seasonsRaw = data['seasons'] as List<dynamic>? ?? [];
       _seasons = seasonsRaw
           .where((s) => (s['season_number'] ?? 0) > 0)
@@ -63,6 +64,17 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
         _error = 'فشل تحميل التفاصيل';
         _loading = false;
       });
+    }
+  }
+
+  Future<void> _launchTrailer(String videoKey) async {
+    final url = Uri.parse('https://www.youtube.com/watch?v=$videoKey');
+    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تعذر فتح الفيديو')),
+        );
+      }
     }
   }
 
@@ -84,12 +96,12 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
     }
 
     final m = _movie!;
+    final trailerKey = m.videos.isNotEmpty ? m.videos.first.key : null;
 
     return Scaffold(
       backgroundColor: AppColors.background,
       body: CustomScrollView(
         slivers: [
-          // ===== Backdrop + App Bar =====
           SliverAppBar(
             expandedHeight: 320,
             pinned: true,
@@ -113,10 +125,8 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
                     CachedNetworkImage(
                       imageUrl: m.backdropUrl,
                       fit: BoxFit.cover,
-                      placeholder: (_, __) =>
-                          Container(color: AppColors.surface),
-                      errorWidget: (_, __, ___) =>
-                          Container(color: AppColors.surface),
+                      placeholder: (_, __) => Container(color: AppColors.surface),
+                      errorWidget: (_, __, ___) => Container(color: AppColors.surface),
                     ),
                   DecoratedBox(
                     decoration: BoxDecoration(
@@ -137,56 +147,41 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
               ),
             ),
           ),
-
-          // ===== Info =====
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.all(AppSizes.paddingM),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // شارة النوع
                   Row(
                     children: [
                       if (_isSeries)
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 4),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
                             color: AppColors.primary,
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: const Text(
                             'مسلسل 📺',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                            ),
+                            style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700),
                           ),
                         )
                       else
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 4),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
                             color: AppColors.accent,
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: const Text(
                             'فيلم 🎬',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                            ),
+                            style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700),
                           ),
                         ),
                     ],
                   ),
                   const SizedBox(height: 12),
-
-                  // العنوان
                   Text(
                     m.title,
                     style: const TextStyle(
@@ -196,7 +191,6 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
                       height: 1.2,
                     ),
                   ),
-
                   if (m.tagline != null && m.tagline!.isNotEmpty) ...[
                     const SizedBox(height: 6),
                     Text(
@@ -208,52 +202,31 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
                       ),
                     ),
                   ],
-
                   const SizedBox(height: 14),
-
-                  // Meta Row (مختلف للفيلم والمسلسل)
                   Wrap(
                     spacing: 14,
                     runSpacing: 8,
                     children: [
-                      if (m.year.isNotEmpty)
-                        _metaItem(Icons.calendar_today_rounded, m.year),
-
-                      // للفيلم: المدة
+                      if (m.year.isNotEmpty) _metaItem(Icons.calendar_today_rounded, m.year),
                       if (!_isSeries && m.runtimeFormatted.isNotEmpty)
                         _metaItem(Icons.access_time_rounded, m.runtimeFormatted),
-
-                      // للمسلسل: عدد المواسم
                       if (_isSeries && m.numberOfSeasons != null && m.numberOfSeasons! > 0)
                         _metaItem(Icons.layers_rounded, '${m.numberOfSeasons} مواسم'),
-
-                      // للمسلسل: عدد الحلقات
                       if (_isSeries && m.numberOfEpisodes != null && m.numberOfEpisodes! > 0)
                         _metaItem(Icons.playlist_play_rounded, '${m.numberOfEpisodes} حلقة'),
-
-                      // الحالة
                       if (m.status != null && m.status!.isNotEmpty)
                         _metaItem(Icons.info_outline_rounded, _translateStatus(m.status!)),
-
-                      _metaItem(Icons.star_rounded, m.rating,
-                          color: AppColors.rating),
+                      _metaItem(Icons.star_rounded, m.rating, color: AppColors.rating),
                     ],
                   ),
-
                   const SizedBox(height: 18),
-
-                  // التصنيفات
                   if (m.genres.isNotEmpty)
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
-                      children:
-                          m.genres.map((g) => _genreChip(g.name)).toList(),
+                      children: m.genres.map((g) => _genreChip(g.name)).toList(),
                     ),
-
                   const SizedBox(height: 24),
-
-                  // القصة
                   if (m.overview != null && m.overview!.isNotEmpty) ...[
                     const _SectionTitle('القصة'),
                     const SizedBox(height: 10),
@@ -268,36 +241,51 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
                     const SizedBox(height: 24),
                   ],
 
-                  // زر الترجمات
+                  // ===== Watch Providers =====
+                  if (m.watchProviders.isNotEmpty) ...[
+                    const _SectionTitle('متوفر على'),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: m.watchProviders.map((p) => _providerLogo(p)).toList(),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+
+                  // ===== Action Buttons (Trailer + Subtitles) =====
                   Row(
                     children: [
+                      if (trailerKey != null) ...[
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () => _launchTrailer(trailerKey),
+                            icon: const Icon(Icons.play_circle_fill_rounded, size: 20),
+                            label: const Text('التريلر'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.surfaceLight,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                      ],
                       Expanded(
                         child: ElevatedButton.icon(
                           onPressed: () => _showSubtitles(context, m),
                           icon: const Icon(Icons.subtitles_rounded, size: 20),
-                          label: const Text('الترجمات العربية'),
+                          label: const Text('الترجمات'),
                           style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 14),
                           ),
                         ),
                       ),
-                      const SizedBox(width: 10),
-                      Container(
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: AppColors.surfaceLight,
-                          borderRadius:
-                              BorderRadius.circular(AppSizes.radiusMedium),
-                        ),
-                        child: const Icon(Icons.favorite_border_rounded,
-                            color: AppColors.textPrimary),
-                      ),
                     ],
                   ),
-
                   const SizedBox(height: 28),
 
-                  // ===== المواسم (للمسلسلات فقط) =====
+                  // ===== Seasons (للمسلسلات فقط) =====
                   if (_isSeries && _seasons.isNotEmpty) ...[
                     const _SectionTitle('المواسم'),
                     const SizedBox(height: 12),
@@ -306,14 +294,13 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
                       child: ListView.builder(
                         scrollDirection: Axis.horizontal,
                         itemCount: _seasons.length,
-                        itemBuilder: (context, i) =>
-                            _seasonCard(_seasons[i]),
+                        itemBuilder: (context, i) => _seasonCard(_seasons[i]),
                       ),
                     ),
                     const SizedBox(height: 28),
                   ],
 
-                  // طاقم العمل
+                  // ===== Cast =====
                   if (m.cast.isNotEmpty) ...[
                     const _SectionTitle('طاقم العمل'),
                     const SizedBox(height: 12),
@@ -323,6 +310,42 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
                         scrollDirection: Axis.horizontal,
                         itemCount: m.cast.length,
                         itemBuilder: (context, i) => _castCard(m.cast[i]),
+                      ),
+                    ),
+                    const SizedBox(height: 28),
+                  ],
+
+                  // ===== Recommendations (أفلام مشابهة) =====
+                  if (m.recommendations.isNotEmpty) ...[
+                    const _SectionTitle('أعمال مشابهة'),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      height: AppSizes.cardHeight + 50,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.only(
+                          right: AppSizes.paddingS,
+                          left: AppSizes.paddingS,
+                        ),
+                        itemCount: m.recommendations.length,
+                        itemBuilder: (context, i) {
+                          final rec = m.recommendations[i];
+                          return MovieCard(
+                            movie: rec,
+                            onTap: () {
+                              // استبدال الشاشة الحالية بالفيلم الموصى به
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => MovieDetailsScreen(
+                                    movieId: rec.id,
+                                    mediaType: rec.mediaType ?? 'movie',
+                                  ),
+                                ),
+                              );
+                            },
+                          );
+                        },
                       ),
                     ),
                     const SizedBox(height: 30),
@@ -374,15 +397,33 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
     );
   }
 
-  // ===== Season Card =====
+  Widget _providerLogo(WatchProvider p) {
+    return Container(
+      width: 50,
+      height: 50,
+      decoration: BoxDecoration(
+        color: AppColors.surfaceLight,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withOpacity(0.1)),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: p.logoUrl.isEmpty
+          ? const Icon(Icons.tv, color: AppColors.textTertiary)
+          : CachedNetworkImage(
+              imageUrl: p.logoUrl,
+              fit: BoxFit.cover,
+              placeholder: (_, __) => Container(color: AppColors.surfaceLight),
+              errorWidget: (_, __, ___) => const Icon(Icons.tv, color: AppColors.textTertiary),
+            ),
+    );
+  }
+
   Widget _seasonCard(Map<String, dynamic> season) {
     final number = season['season_number'] ?? 0;
     final name = season['name'] ?? 'الموسم $number';
     final episodes = season['episode_count'] ?? 0;
     final poster = season['poster_path'];
-    final posterUrl = poster == null
-        ? ''
-        : '${ApiConstants.tmdbImageBase}/w300$poster';
+    final posterUrl = poster == null ? '' : '${ApiConstants.tmdbImageBase}/w300$poster';
 
     return Container(
       width: 100,
@@ -412,8 +453,7 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
                   : CachedNetworkImage(
                       imageUrl: posterUrl,
                       fit: BoxFit.cover,
-                      placeholder: (_, __) =>
-                          Container(color: AppColors.surfaceLight),
+                      placeholder: (_, __) => Container(color: AppColors.surfaceLight),
                       errorWidget: (_, __, ___) => Container(
                         color: AppColors.surfaceLight,
                         child: Center(
@@ -516,22 +556,14 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
 
   String _translateStatus(String status) {
     switch (status) {
-      case 'Returning Series':
-        return 'مستمر';
-      case 'Ended':
-        return 'منتهي';
-      case 'Canceled':
-        return 'ملغى';
-      case 'In Production':
-        return 'قيد الإنتاج';
-      case 'Planned':
-        return 'مُخطط له';
-      case 'Released':
-        return 'صدر';
-      case 'Post Production':
-        return 'ما بعد الإنتاج';
-      default:
-        return status;
+      case 'Returning Series': return 'مستمر';
+      case 'Ended': return 'منتهي';
+      case 'Canceled': return 'ملغى';
+      case 'In Production': return 'قيد الإنتاج';
+      case 'Planned': return 'مُخطط له';
+      case 'Released': return 'صدر';
+      case 'Post Production': return 'ما بعد الإنتاج';
+      default: return status;
     }
   }
 
@@ -635,8 +667,7 @@ class _SubtitlesSheetState extends State<_SubtitlesSheet> {
                   : ListView.builder(
                       padding: const EdgeInsets.all(AppSizes.paddingM),
                       itemCount: _subtitles.length,
-                      itemBuilder: (context, i) =>
-                          _subtitleTile(_subtitles[i]),
+                      itemBuilder: (context, i) => _subtitleTile(_subtitles[i]),
                     ),
     );
   }
@@ -650,8 +681,7 @@ class _SubtitlesSheetState extends State<_SubtitlesSheet> {
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
       child: ListTile(
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: Container(
           width: 44,
           height: 44,

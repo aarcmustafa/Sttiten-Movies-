@@ -82,6 +82,9 @@ class MovieDetails extends Movie {
   final String? status;
   final int? numberOfSeasons;
   final int? numberOfEpisodes;
+  final List<Video> videos;
+  final List<Movie> recommendations;
+  final List<WatchProvider> watchProviders;
 
   MovieDetails({
     required super.id,
@@ -103,11 +106,15 @@ class MovieDetails extends Movie {
     this.status,
     this.numberOfSeasons,
     this.numberOfEpisodes,
+    this.videos = const [],
+    this.recommendations = const [],
+    this.watchProviders = const [],
   });
 
   factory MovieDetails.fromJson(Map<String, dynamic> json) {
     final credits = json['credits'] as Map<String, dynamic>?;
     final castList = credits?['cast'] as List<dynamic>? ?? [];
+    final runtimeList = json['episode_run_time'] as List<dynamic>?;
 
     return MovieDetails(
       id: json['id'] ?? 0,
@@ -121,7 +128,7 @@ class MovieDetails extends Movie {
       voteCount: json['vote_count'] ?? 0,
       popularity: (json['popularity'] ?? 0).toDouble(),
       mediaType: json['media_type'] ?? (json['first_air_date'] != null ? 'tv' : 'movie'),
-      runtime: json['runtime'] ?? (json['episode_run_time'] as List?)?.firstOrNull,
+      runtime: json['runtime'] ?? (runtimeList != null && runtimeList.isNotEmpty ? runtimeList.first : null),
       genres: (json['genres'] as List<dynamic>? ?? [])
           .map((g) => Genre.fromJson(g))
           .toList(),
@@ -133,7 +140,31 @@ class MovieDetails extends Movie {
       status: json['status'],
       numberOfSeasons: json['number_of_seasons'],
       numberOfEpisodes: json['number_of_episodes'],
+      videos: (json['videos']?['results'] as List<dynamic>? ?? [])
+          .map((v) => Video.fromJson(v))
+          .where((v) => v.site == 'YouTube')
+          .toList(),
+      recommendations: (json['recommendations']?['results'] as List<dynamic>? ?? [])
+          .map((r) => Movie.fromJson(r))
+          .toList(),
+      watchProviders: _extractProviders(json['watch/providers']?['results']),
     );
+  }
+
+  static List<WatchProvider> _extractProviders(Map<String, dynamic>? results) {
+    if (results == null) return [];
+    final region = results['DZ'] ?? results['AE'] ?? results['SA'] ?? results['US'];
+    if (region == null) return [];
+
+    final providers = <WatchProvider>[];
+    final flatrate = (region['flatrate'] as List<dynamic>? ?? []);
+    for (var p in flatrate) {
+      providers.add(WatchProvider(
+        providerName: p['provider_name'] ?? '',
+        logoPath: p['logo_path'] ?? '',
+      ));
+    }
+    return providers;
   }
 
   String get runtimeFormatted {
@@ -180,4 +211,31 @@ class CastMember {
   String get profileUrl => profilePath == null
       ? ''
       : '${ApiConstants.tmdbImageBase}/w200$profilePath';
+}
+
+class Video {
+  final String id;
+  final String key;
+  final String site;
+  final String type;
+
+  Video({required this.id, required this.key, required this.site, required this.type});
+
+  factory Video.fromJson(Map<String, dynamic> json) => Video(
+        id: json['id'] ?? '',
+        key: json['key'] ?? '',
+        site: json['site'] ?? '',
+        type: json['type'] ?? '',
+      );
+}
+
+class WatchProvider {
+  final String providerName;
+  final String logoPath;
+
+  WatchProvider({required this.providerName, required this.logoPath});
+
+  String get logoUrl => logoPath.isEmpty
+      ? ''
+      : '${ApiConstants.tmdbImageBase}/w200$logoPath';
 }

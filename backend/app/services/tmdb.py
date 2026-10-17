@@ -57,7 +57,7 @@ class TMDBService:
         return await self._get("movie/top_rated", page=page)
 
     async def get_movie_details(self, movie_id: int):
-        return await self._get(f"movie/{movie_id}", append_to_response="credits,videos,recommendations,watch/providers")
+        return await self._get(f"movie/{movie_id}", append_to_response="credits,videos,recommendations")
 
     async def search_movies(self, query: str, page: int = 1):
         return await self._get("search/movie", query=query, page=page)
@@ -69,7 +69,7 @@ class TMDBService:
         return await self._get(f"trending/tv/{time_window}")
 
     async def get_series_details(self, series_id: int):
-        return await self._get(f"tv/{series_id}", append_to_response="credits,videos,recommendations,watch/providers")
+        return await self._get(f"tv/{series_id}", append_to_response="credits,videos,recommendations")
 
     async def search_multi(self, query: str, page: int = 1):
         return await self._get("search/multi", query=query, page=page)

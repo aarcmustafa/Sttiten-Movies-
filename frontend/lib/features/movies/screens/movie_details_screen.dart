@@ -456,26 +456,7 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
     );
   }
 
-  Widget _providerLogo(WatchProvider p) {
-    return Container(
-      width: 50,
-      height: 50,
-      decoration: BoxDecoration(
-        color: AppColors.surfaceLight,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: p.logoUrl.isEmpty
-          ? const Icon(Icons.tv, color: AppColors.textTertiary)
-          : CachedNetworkImage(
-              imageUrl: p.logoUrl,
-              fit: BoxFit.cover,
-              placeholder: (_, __) => Container(color: AppColors.surfaceLight),
-              errorWidget: (_, __, ___) => const Icon(Icons.tv, color: AppColors.textTertiary),
-            ),
-    );
-  }
+  
 
   Widget _seasonCard(Map<String, dynamic> season) {
     final number = season['season_number'] ?? 0;

@@ -84,7 +84,6 @@ class MovieDetails extends Movie {
   final int? numberOfEpisodes;
   final List<Video> videos;
   final List<Movie> recommendations;
-  final List<WatchProvider> watchProviders;
 
   MovieDetails({
     required super.id,
@@ -108,7 +107,6 @@ class MovieDetails extends Movie {
     this.numberOfEpisodes,
     this.videos = const [],
     this.recommendations = const [],
-    this.watchProviders = const [],
   });
 
   factory MovieDetails.fromJson(Map<String, dynamic> json) {
@@ -147,24 +145,7 @@ class MovieDetails extends Movie {
       recommendations: (json['recommendations']?['results'] as List<dynamic>? ?? [])
           .map((r) => Movie.fromJson(r))
           .toList(),
-      watchProviders: _extractProviders(json['watch/providers']?['results']),
     );
-  }
-
-  static List<WatchProvider> _extractProviders(Map<String, dynamic>? results) {
-    if (results == null) return [];
-    final region = results['DZ'] ?? results['AE'] ?? results['SA'] ?? results['US'];
-    if (region == null) return [];
-
-    final providers = <WatchProvider>[];
-    final flatrate = (region['flatrate'] as List<dynamic>? ?? []);
-    for (var p in flatrate) {
-      providers.add(WatchProvider(
-        providerName: p['provider_name'] ?? '',
-        logoPath: p['logo_path'] ?? '',
-      ));
-    }
-    return providers;
   }
 
   String get runtimeFormatted {
@@ -229,13 +210,4 @@ class Video {
       );
 }
 
-class WatchProvider {
-  final String providerName;
-  final String logoPath;
 
-  WatchProvider({required this.providerName, required this.logoPath});
-
-  String get logoUrl => logoPath.isEmpty
-      ? ''
-      : '${ApiConstants.tmdbImageBase}/w200$logoPath';
-}

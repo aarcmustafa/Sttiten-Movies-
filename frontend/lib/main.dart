@@ -10,8 +10,24 @@ import 'features/favorites/providers/favorites_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // تجهيز بصمة الجهاز قبل فتح التطبيق
+
+  // عرض الأخطاء على الشاشة بدلاً من الشاشة البيضاء
+  ErrorWidget.builder = (FlutterErrorDetails details) {
+    return Material(
+      color: Colors.black,
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Text(
+            'حدث خطأ تقني:\n\n${details.exceptionAsString()}',
+            style: const TextStyle(color: Colors.red, fontSize: 14),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ),
+    );
+  };
+
   await DeviceIdManager.getDeviceId();
 
   SystemChrome.setPreferredOrientations([
@@ -50,7 +66,7 @@ class SttitenMoviesApp extends StatelessWidget {
             child: child ?? const SizedBox.shrink(),
           );
         },
-        home: const SplashScreen(), // <--- الشاشة الأولى الآن هي الترحيبية
+        home: const SplashScreen(),
       ),
     );
   }

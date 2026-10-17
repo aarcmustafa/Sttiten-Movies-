@@ -1,9 +1,9 @@
-import 'constants.dart';
 import 'package:flutter/material.dart';
 import '../features/movies/screens/movies_screen.dart';
 import '../features/series/screens/series_screen.dart';
 import '../features/search/screens/search_screen.dart';
 import '../features/favorites/screens/favorites_screen.dart';
+import 'constants.dart';
 
 class MainScaffold extends StatefulWidget {
   const MainScaffold({super.key});
@@ -15,29 +15,25 @@ class MainScaffold extends StatefulWidget {
 class _MainScaffoldState extends State<MainScaffold> {
   int _currentIndex = 0;
 
-  final List<Widget> _screens = const [
-    MoviesScreen(),
-    SeriesScreen(),
-    FavoritesScreen(),
-    SearchScreen(),
-  ];
+  Widget _buildScreen() {
+    switch (_currentIndex) {
+      case 0: return const MoviesScreen();
+      case 1: return const SeriesScreen();
+      case 2: return const FavoritesScreen();
+      case 3: return const SearchScreen();
+      default: return const MoviesScreen();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
-      ),
+      backgroundColor: AppColors.background,
+      body: _buildScreen(),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: AppColors.surface,
-          border: Border(
-            top: BorderSide(
-              color: Colors.white.withOpacity(0.05),
-              width: 1,
-            ),
-          ),
+          border: Border(top: BorderSide(color: Colors.white.withOpacity(0.05), width: 1)),
         ),
         child: SafeArea(
           child: BottomNavigationBar(
@@ -47,36 +43,14 @@ class _MainScaffoldState extends State<MainScaffold> {
             elevation: 0,
             selectedItemColor: AppColors.primaryLight,
             unselectedItemColor: AppColors.textTertiary,
-            selectedLabelStyle: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-            ),
-            unselectedLabelStyle: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-            ),
+            selectedLabelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+            unselectedLabelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
             type: BottomNavigationBarType.fixed,
             items: const [
-              BottomNavigationBarItem(
-                icon: Icon(Icons.movie_rounded),
-                activeIcon: Icon(Icons.movie_rounded, color: AppColors.primaryLight),
-                label: 'أفلام',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.tv_rounded),
-                activeIcon: Icon(Icons.tv_rounded, color: AppColors.primaryLight),
-                label: 'مسلسلات',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.favorite_border_rounded),
-                activeIcon: Icon(Icons.favorite_rounded, color: AppColors.primaryLight),
-                label: 'المفضلة',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.search_rounded),
-                activeIcon: Icon(Icons.search_rounded, color: AppColors.primaryLight),
-                label: 'بحث',
-              ),
+              BottomNavigationBarItem(icon: Icon(Icons.movie_rounded), activeIcon: Icon(Icons.movie_rounded, color: AppColors.primaryLight), label: 'أفلام'),
+              BottomNavigationBarItem(icon: Icon(Icons.tv_rounded), activeIcon: Icon(Icons.tv_rounded, color: AppColors.primaryLight), label: 'مسلسلات'),
+              BottomNavigationBarItem(icon: Icon(Icons.favorite_border_rounded), activeIcon: Icon(Icons.favorite_rounded, color: AppColors.primaryLight), label: 'المفضلة'),
+              BottomNavigationBarItem(icon: Icon(Icons.search_rounded), activeIcon: Icon(Icons.search_rounded, color: AppColors.primaryLight), label: 'بحث'),
             ],
           ),
         ),

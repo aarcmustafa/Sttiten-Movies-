@@ -1,3 +1,4 @@
+import '../../../core/page_transitions.dart';
 import '../../../core/constants.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
@@ -253,12 +254,10 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
                       onPressed: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(
-                            builder: (_) => VideoPlayerScreen(
+                          FadeSlidePageRoute(child: VideoPlayerScreen(
                           title: m.title,
                           tmdbId: m.id,
-                          mediaType: _isSeries ? 'tv' : 'movie',
-                        ),
+                          mediaType: _isSeries ? 'tv' : 'movie',),
                           ),
                         );
                       },
@@ -386,11 +385,9 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
                             onTap: () {
                               Navigator.pushReplacement(
                                 context,
-                                MaterialPageRoute(
-                                  builder: (_) => MovieDetailsScreen(
+                                FadeSlidePageRoute(child: MovieDetailsScreen(
                                     movieId: rec.id,
-                                    mediaType: rec.mediaType ?? 'movie',
-                                  ),
+                                    mediaType: rec.mediaType ?? 'movie',),
                                 ),
                               );
                             },
@@ -459,13 +456,11 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (_) => EpisodesScreen(
+          FadeSlidePageRoute(child: EpisodesScreen(
               seriesId: _movie!.id,
               seasonNumber: number,
               seasonName: name,
-              seriesTitle: _movie!.title,
-            ),
+              seriesTitle: _movie!.title,),
           ),
         );
       },
@@ -542,7 +537,7 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => ActorDetailsScreen(personId: c.id)),
+          FadeSlidePageRoute(child: ActorDetailsScreen(personId: c.id)),
         );
       },
       child: Container(
@@ -621,12 +616,10 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
   void _showSubtitles(BuildContext context, MovieDetails m) {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => _SubtitlesSheet(
+      FadeSlidePageRoute(child: _SubtitlesSheet(
           tmdbId: m.id,
           mediaType: _isSeries ? 'tv' : 'movie',
-          title: m.title,
-        ),
+          title: m.title,),
       ),
     );
   }

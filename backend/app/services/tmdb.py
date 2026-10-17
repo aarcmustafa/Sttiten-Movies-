@@ -81,6 +81,20 @@ class TMDBService:
         return await self._get("search/tv", query=query, page=page)
 
 
+        return await self._get(
+            "discover/tv",
+            sort_by="popularity.desc",
+            with_original_language=language_code,
+            page=page
+        )
+
+        return await self._get(
+            "discover/tv",
+            sort_by="popularity.desc",
+            with_original_language=language_code,
+            page=page
+        )
+
     async def discover_series_by_language(self, language_code: str, page: int = 1):
         return await self._get(
             "discover/tv",

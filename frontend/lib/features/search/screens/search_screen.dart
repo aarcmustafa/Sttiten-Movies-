@@ -1,3 +1,4 @@
+import '../../../core/page_transitions.dart';
 import '../../../core/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -72,7 +73,7 @@ class _SearchScreenState extends State<SearchScreen> {
           final isSearching = moviesProv.searchState == LoadingState.loading ||
               seriesProv.searchState == LoadingState.loading;
 
-          if (isSearching) return const AppLoader();
+          if (isSearching) return const Center(child: CircularProgressIndicator(color: AppColors.primary));
 
           if (moviesProv.searchResults.isEmpty && seriesProv.searchResults.isEmpty) {
             if (_lastQuery.isEmpty) {
@@ -120,8 +121,7 @@ class _SearchScreenState extends State<SearchScreen> {
   void _open(BuildContext context, int id, String mediaType) {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => MovieDetailsScreen(movieId: id, mediaType: mediaType),
+      FadeSlidePageRoute(child: MovieDetailsScreen(movieId: id, mediaType: mediaType),
       ),
     );
   }

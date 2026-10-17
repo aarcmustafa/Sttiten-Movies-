@@ -1,3 +1,4 @@
+import '../../../core/page_transitions.dart';
 import '../../../core/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -38,7 +39,12 @@ class _SeriesScreenState extends State<SeriesScreen> {
         builder: (context, provider, _) {
           if (provider.popularState == LoadingState.loading &&
               provider.popularSeries.isEmpty) {
-            return const AppLoader();
+            return ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.all(16),
+              itemCount: 4,
+              itemBuilder: (_, __) => const ShimmerCard(),
+            );
           }
 
           if (provider.popularState == LoadingState.error &&
@@ -161,8 +167,7 @@ class _SeriesScreenState extends State<SeriesScreen> {
   void _open(BuildContext context, int id) {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => MovieDetailsScreen(movieId: id, mediaType: 'tv'),
+      FadeSlidePageRoute(child: MovieDetailsScreen(movieId: id, mediaType: 'tv'),
       ),
     );
   }

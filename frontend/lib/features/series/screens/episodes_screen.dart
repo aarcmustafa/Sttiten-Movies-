@@ -1,3 +1,4 @@
+import '../../../core/page_transitions.dart';
 import '../../../core/constants.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
@@ -73,14 +74,12 @@ class _EpisodesScreenState extends State<EpisodesScreen> {
                         onTap: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(
-                              builder: (_) => VideoPlayerScreen(
+                            FadeSlidePageRoute(child: VideoPlayerScreen(
                                 title: '$name - $epNum',
                                 tmdbId: widget.seriesId,
                                 mediaType: 'tv',
                                 seasonNumber: widget.seasonNumber,
-                                episodeNumber: epNum,
-                              ),
+                                episodeNumber: epNum,),
                             ),
                           );
                         },

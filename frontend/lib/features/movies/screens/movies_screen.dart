@@ -1,3 +1,4 @@
+import '../../../core/page_transitions.dart';
 import '../../../core/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -182,8 +183,7 @@ class _MoviesScreenState extends State<MoviesScreen> {
   void _open(BuildContext context, int id) {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => MovieDetailsScreen(movieId: id, mediaType: 'movie'),
+      FadeSlidePageRoute(child: MovieDetailsScreen(movieId: id, mediaType: 'movie'),
       ),
     );
   }

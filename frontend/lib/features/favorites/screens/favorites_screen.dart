@@ -1,3 +1,4 @@
+import '../../../core/page_transitions.dart';
 import '../../../core/constants.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
@@ -63,11 +64,9 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(
-                        builder: (_) => MovieDetailsScreen(
+                      FadeSlidePageRoute(child: MovieDetailsScreen(
                           movieId: movie.id,
-                          mediaType: movie.mediaType ?? 'movie',
-                        ),
+                          mediaType: movie.mediaType ?? 'movie',),
                       ),
                     );
                   },

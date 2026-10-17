@@ -1,3 +1,4 @@
+import '../../video/webview_screen.dart';
 import '../../../core/page_transitions.dart';
 import '../../../core/constants.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -801,6 +802,7 @@ class _SubtitlesSheetState extends State<_SubtitlesSheet> {
 
 
 
+
 class _StreamsListScreen extends StatefulWidget {
   final int tmdbId;
   final String title;
@@ -858,6 +860,7 @@ class _StreamsListScreenState extends State<_StreamsListScreen> {
                 title: widget.title,
                 tmdbId: widget.tmdbId,
                 mediaType: widget.mediaType,
+                videoUrl: _hlsUrl!,
               ),
             ),
           );
@@ -887,6 +890,7 @@ class _StreamsListScreenState extends State<_StreamsListScreen> {
               ? Center(
                   child: Padding(
                     padding: const EdgeInsets.all(20),
+                    child: Text(_error!, style: const TextStyle(color: Colors.white), textAlign: TextAlign.center),
                   ),
                 )
               : _embedUrls.isEmpty

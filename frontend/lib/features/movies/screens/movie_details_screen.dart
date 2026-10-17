@@ -246,17 +246,7 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
                     const SizedBox(height: 24),
                   ],
 
-                  if (m.watchProviders.isNotEmpty) ...[
-                    const _SectionTitle('متوفر على'),
-                    const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 12,
-                      runSpacing: 12,
-                      children: m.watchProviders.map((p) => _providerLogo(p)).toList(),
-                    ),
-                    const SizedBox(height: 24),
-                  ],
-
+                  
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(

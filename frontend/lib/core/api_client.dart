@@ -62,58 +62,58 @@ class ApiClient {
   // ============ Movies ============
   Future<Map<String, dynamic>> getPopularMovies({int page = 1, String language = 'ar'}) async {
     final res = await _dio.get(ApiConstants.popularMovies, queryParameters: {'page': page, 'language': language});
-    return res.data as Map<String, dynamic>;
+    return res.data as Map<String, dynamic>? ?? {};
   }
 
   Future<Map<String, dynamic>> getTrendingMovies({String timeWindow = 'week'}) async {
     final res = await _dio.get(ApiConstants.trendingMovies, queryParameters: {'time_window': timeWindow});
-    return res.data as Map<String, dynamic>;
+    return res.data as Map<String, dynamic>? ?? {};
   }
 
   Future<Map<String, dynamic>> getTopRatedMovies({int page = 1}) async {
     final res = await _dio.get(ApiConstants.topRatedMovies, queryParameters: {'page': page});
-    return res.data as Map<String, dynamic>;
+    return res.data as Map<String, dynamic>? ?? {};
   }
 
   Future<Map<String, dynamic>> searchMovies(String query, {int page = 1}) async {
     final res = await _dio.get(ApiConstants.searchMovies, queryParameters: {'q': query, 'page': page});
-    return res.data as Map<String, dynamic>;
+    return res.data as Map<String, dynamic>? ?? {};
   }
 
   Future<Map<String, dynamic>> getMovieDetails(int id) async {
     final res = await _dio.get('${ApiConstants.apiPrefix}/movies/$id');
-    return res.data as Map<String, dynamic>;
+    return res.data as Map<String, dynamic>? ?? {};
   }
 
   // ============ Series ============
   Future<Map<String, dynamic>> getPopularSeries({int page = 1}) async {
     final res = await _dio.get(ApiConstants.popularSeries, queryParameters: {'page': page});
-    return res.data as Map<String, dynamic>;
+    return res.data as Map<String, dynamic>? ?? {};
   }
 
   Future<Map<String, dynamic>> getTrendingSeries({String timeWindow = 'week'}) async {
     final res = await _dio.get(ApiConstants.trendingSeries, queryParameters: {'time_window': timeWindow});
-    return res.data as Map<String, dynamic>;
+    return res.data as Map<String, dynamic>? ?? {};
   }
 
   Future<Map<String, dynamic>> searchSeries(String query, {int page = 1}) async {
     final res = await _dio.get(ApiConstants.searchSeries, queryParameters: {'q': query, 'page': page});
-    return res.data as Map<String, dynamic>;
+    return res.data as Map<String, dynamic>? ?? {};
   }
 
   Future<Map<String, dynamic>> getSeriesDetails(int id) async {
     final res = await _dio.get('${ApiConstants.apiPrefix}/series/$id');
-    return res.data as Map<String, dynamic>;
+    return res.data as Map<String, dynamic>? ?? {};
   }
 
   Future<Map<String, dynamic>> getTurkishSeries({int page = 1}) async {
     final res = await _dio.get('${ApiConstants.apiPrefix}/series/turkish', queryParameters: {'page': page});
-    return res.data as Map<String, dynamic>;
+    return res.data as Map<String, dynamic>? ?? {};
   }
 
   Future<Map<String, dynamic>> getIndianSeries({int page = 1}) async {
     final res = await _dio.get('${ApiConstants.apiPrefix}/series/indian', queryParameters: {'page': page});
-    return res.data as Map<String, dynamic>;
+    return res.data as Map<String, dynamic>? ?? {};
   }
 
   // ============ Subtitles ============
@@ -133,7 +133,7 @@ class ApiClient {
     if (episodeNumber != null) params['episode_number'] = episodeNumber;
 
     final res = await _dio.get(ApiConstants.searchSubtitles, queryParameters: params);
-    return res.data as Map<String, dynamic>;
+    return res.data as Map<String, dynamic>? ?? {};
   }
 
   Future<List<int>> downloadSubtitle({required String subtitlePath, String filename = 'subtitle.zip'}) async {
@@ -148,7 +148,7 @@ class ApiClient {
   // ============ Favorites ============
   Future<List<dynamic>> getFavorites() async {
     final res = await _dio.get('${ApiConstants.apiPrefix}/favorites/');
-    return res.data as List<dynamic>;
+    return res.data as List<dynamic>? ?? [];
   }
 
   Future<Map<String, dynamic>> addFavorite({
@@ -166,7 +166,7 @@ class ApiClient {
         'poster_path': posterPath,
       },
     );
-    return res.data as Map<String, dynamic>;
+    return res.data as Map<String, dynamic>? ?? {};
   }
 
   Future<void> removeFavorite({required int tmdbId, required String mediaType}) async {

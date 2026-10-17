@@ -31,7 +31,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   @override
   void initState() {
     super.initState();
-    // السماح بالتدوير الحر (عمودي + أفقي)
+    // السماح بالتدوير الحر
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,
@@ -45,21 +45,12 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
       widget.videoUrl,
       hwAcc: HwAcc.full,
       autoPlay: true,
-      options: VlcPlayerOptions(
-        advanced: VlcAdvancedOptions([
-          VlcAdvancedOptions.networkCaching(2000),
-        ]),
-        audio: VlcAudioOptions([
-          VlcAudioOptions.setVolume(150),
-        ]),
-        video: VlcVideoOptions([
-          VlcVideoOptions.hardwareAcceleration,
-        ]),
-      ),
     );
+    
+    // إجبار الصوت على أقصى حد (100) عند بدء التشغيل
     _vlcController.addListener(() {
       if (_vlcController.value.isInitialized) {
-        _vlcController.setVolume(150);
+        _vlcController.setVolume(100);
       }
     });
   }

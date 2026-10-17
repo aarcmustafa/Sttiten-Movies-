@@ -9,6 +9,8 @@ import '../../../shared/widgets/loading_indicator.dart';
 import '../../favorites/providers/favorites_provider.dart';
 import '../models/movie.dart';
 import '../widgets/movie_card.dart';
+import '../../series/screens/episodes_screen.dart';
+import '../../person/screens/actor_details_screen.dart';
 import '../../video/video_player_screen.dart';
 
 class MovieDetailsScreen extends StatefulWidget {
@@ -262,7 +264,11 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => VideoPlayerScreen(title: m.title),
+                            builder: (_) => VideoPlayerScreen(
+                          title: m.title,
+                          tmdbId: m.id,
+                          mediaType: _isSeries ? 'tv' : 'movie',
+                        ),
                           ),
                         );
                       },
@@ -478,7 +484,21 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
     final poster = season['poster_path'];
     final posterUrl = poster == null ? '' : '${ApiConstants.tmdbImageBase}/w300$poster';
 
-    return Container(
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => EpisodesScreen(
+              seriesId: m.id,
+              seasonNumber: number,
+              seasonName: name,
+              seriesTitle: m.title,
+            ),
+          ),
+        );
+      },
+      child: Container(
       width: 100,
       margin: const EdgeInsets.only(left: 12),
       child: Column(
@@ -543,11 +563,18 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
           ),
         ],
       ),
-    );
+    ));
   }
 
   Widget _castCard(CastMember c) {
-    return Container(
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => ActorDetailsScreen(personId: c.id)),
+        );
+      },
+      child: Container(
       width: 90,
       margin: const EdgeInsets.only(left: 12),
       child: Column(
@@ -604,7 +631,7 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
             ),
         ],
       ),
-    );
+    ));
   }
 
   String _translateStatus(String status) {

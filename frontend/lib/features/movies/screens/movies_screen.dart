@@ -5,6 +5,7 @@ import '../../../shared/widgets/loading_indicator.dart';
 import '../providers/movies_provider.dart';
 import '../widgets/movie_card.dart';
 import 'movie_details_screen.dart';
+import '../../settings/screens/settings_screen.dart';
 
 class MoviesScreen extends StatefulWidget {
   const MoviesScreen({super.key});
@@ -44,6 +45,12 @@ class _MoviesScreenState extends State<MoviesScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
+      floatingActionButton: FloatingActionButton(
+        mini: true,
+        backgroundColor: AppColors.surfaceLight,
+        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen())),
+        child: const Icon(Icons.settings, color: Colors.white),
+      ),
       body: Consumer<MoviesProvider>(
         builder: (context, provider, _) {
           if (provider.trendingState == LoadingState.loading &&

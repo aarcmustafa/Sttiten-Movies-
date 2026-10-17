@@ -39,12 +39,13 @@ app.add_middleware(
 )
 
 # استدعاء المسارات
-from app.api.routes import movies, series, subtitles, favorites
+from app.api.routes import movies, series, subtitles, favorites, person
 
 app.include_router(movies.router, prefix=settings.API_V1_PREFIX)
 app.include_router(series.router, prefix=settings.API_V1_PREFIX)
 app.include_router(subtitles.router, prefix=settings.API_V1_PREFIX)
 app.include_router(favorites.router, prefix=settings.API_V1_PREFIX)
+app.include_router(person.router, prefix=settings.API_V1_PREFIX)
 
 @app.get("/", tags=["Root"])
 async def root():

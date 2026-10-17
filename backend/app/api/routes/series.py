@@ -48,6 +48,15 @@ async def search_series(
         raise HTTPException(status_code=502, detail=str(e))
 
 
+@router.get("/{series_id}/seasons/{season_number}")
+async def get_season_details(series_id: int, season_number: int):
+    """حلقات موسم معين"""
+    try:
+        data = await tmdb_service.get_season_details(series_id=series_id, season_number=season_number)
+        return data
+    except TMDBError as e:
+        raise HTTPException(status_code=502, detail=str(e))
+
 @router.get("/{series_id}")
 async def get_series_details(series_id: int):
     """تفاصيل مسلسل كاملة"""

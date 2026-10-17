@@ -797,3 +797,98 @@ class _SubtitlesSheetState extends State<_SubtitlesSheet> {
     );
   }
 }
+
+
+class _StreamsListScreen extends StatefulWidget {
+  final int tmdbId;
+  final String title;
+  final String mediaType;
+  final int season;
+  final int episode;
+
+  const _StreamsListScreen({
+    required this.tmdbId,
+    required this.title,
+    required this.mediaType,
+    this.season = 1,
+    this.episode = 1,
+  });
+
+  @override
+  State<_StreamsListScreen> createState() => _StreamsListScreenState();
+}
+
+class _StreamsListScreenState extends State<_StreamsListScreen> {
+  final _api = ApiClient();
+  List<String> _urls = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStreams();
+  }
+
+  Future<void> _loadStreams() async {
+    try {
+      final urls = await _api.getStreamUrls(
+        tmdbId: widget.tmdbId,
+        mediaType: widget.mediaType,
+        season: widget.season,
+        episode: widget.episode,
+      );
+      setState(() {
+        _urls = urls;
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(title: Text('اختر مصدر المشاهدة')),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+          : _urls.isEmpty
+              ? const Center(child: Text('لا توجد مصادر متاحة حالياً', style: TextStyle(color: Colors.white)))
+              : ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: _urls.length,
+                  itemBuilder: (context, index) {
+                    // استخراج اسم النطاق لعرضه (مثل vidsrc.to)
+                    final uri = Uri.parse(_urls[index]);
+                    final host = uri.host.isNotEmpty ? uri.host : 'مصدر ${index + 1}';
+
+                    return Card(
+                      color: AppColors.surfaceLight,
+                      margin: const EdgeInsets.only(bottom: 10),
+                      child: ListTile(
+                        leading: const Icon(Icons.play_circle_fill_rounded, color: AppColors.primary, size: 36),
+                        title: Text(
+                          'مصدر ${index + 1}: $host',
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                        ),
+                        subtitle: const Text('اضغط للتشغيل (قد يحتوي على إعلانات)', style: TextStyle(color: AppColors.textTertiary, fontSize: 12)),
+                        trailing: const Icon(Icons.arrow_forward_ios, color: Colors.white54, size: 16),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => WebViewScreen(
+                                title: widget.title,
+                                url: _urls[index],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    );
+                  },
+                ),
+    );
+  }
+}

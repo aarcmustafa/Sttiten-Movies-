@@ -1,6 +1,6 @@
+import '../../../core/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../core/constants.dart';
 import '../../../shared/widgets/loading_indicator.dart';
 import '../../movies/providers/movies_provider.dart';
 import '../providers/series_provider.dart';

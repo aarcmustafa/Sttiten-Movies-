@@ -4,7 +4,6 @@ import '../features/movies/screens/movies_screen.dart';
 import '../features/series/screens/series_screen.dart';
 import '../features/search/screens/search_screen.dart';
 import '../features/favorites/screens/favorites_screen.dart';
-import 'constants.dart';
 
 class MainScaffold extends StatefulWidget {
   const MainScaffold({super.key});

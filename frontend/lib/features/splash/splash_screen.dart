@@ -1,10 +1,9 @@
-import '../../../core/constants.dart';
+import '../../core/constants.dart';
 import 'dart:async';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import '../../../core/constants.dart';
 import '../../../core/main_scaffold.dart';
 
 class SplashScreen extends StatefulWidget {

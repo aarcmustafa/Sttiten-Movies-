@@ -1,8 +1,8 @@
+import '../../core/constants.dart';
 import 'package:chewie/chewie.dart';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import '../../../core/api_client.dart';
-import '../../../core/constants.dart';
 
 class VideoPlayerScreen extends StatefulWidget {
   final String title;

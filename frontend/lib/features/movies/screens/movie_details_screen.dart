@@ -8,7 +8,12 @@ import '../models/movie.dart';
 
 class MovieDetailsScreen extends StatefulWidget {
   final int movieId;
-  const MovieDetailsScreen({super.key, required this.movieId});
+  final String mediaType; // 'movie' أو 'tv'
+  const MovieDetailsScreen({
+    super.key,
+    required this.movieId,
+    this.mediaType = 'movie',
+  });
 
   @override
   State<MovieDetailsScreen> createState() => _MovieDetailsScreenState();
@@ -19,7 +24,9 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
   MovieDetails? _movie;
   bool _loading = true;
   String? _error;
-  bool _isSeries = false;
+  List<Map<String, dynamic>> _seasons = [];
+
+  bool get _isSeries => widget.mediaType == 'tv';
 
   @override
   void initState() {
@@ -34,13 +41,19 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
     });
     try {
       Map<String, dynamic> data;
-      try {
-        data = await _api.getMovieDetails(widget.movieId);
-        _isSeries = false;
-      } catch (_) {
+      if (_isSeries) {
         data = await _api.getSeriesDetails(widget.movieId);
-        _isSeries = true;
+      } else {
+        data = await _api.getMovieDetails(widget.movieId);
       }
+
+      // استخراج المواسم إن كان مسلسلًا
+      final seasonsRaw = data['seasons'] as List<dynamic>? ?? [];
+      _seasons = seasonsRaw
+          .where((s) => (s['season_number'] ?? 0) > 0)
+          .cast<Map<String, dynamic>>()
+          .toList();
+
       setState(() {
         _movie = MovieDetails.fromJson(data);
         _loading = false;
@@ -76,6 +89,7 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
       backgroundColor: AppColors.background,
       body: CustomScrollView(
         slivers: [
+          // ===== Backdrop + App Bar =====
           SliverAppBar(
             expandedHeight: 320,
             pinned: true,
@@ -99,8 +113,10 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
                     CachedNetworkImage(
                       imageUrl: m.backdropUrl,
                       fit: BoxFit.cover,
-                      placeholder: (_, __) => Container(color: AppColors.surface),
-                      errorWidget: (_, __, ___) => Container(color: AppColors.surface),
+                      placeholder: (_, __) =>
+                          Container(color: AppColors.surface),
+                      errorWidget: (_, __, ___) =>
+                          Container(color: AppColors.surface),
                     ),
                   DecoratedBox(
                     decoration: BoxDecoration(
@@ -121,12 +137,56 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
               ),
             ),
           ),
+
+          // ===== Info =====
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.all(AppSizes.paddingM),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // شارة النوع
+                  Row(
+                    children: [
+                      if (_isSeries)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Text(
+                            'مسلسل 📺',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        )
+                      else
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppColors.accent,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Text(
+                            'فيلم 🎬',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+
+                  // العنوان
                   Text(
                     m.title,
                     style: const TextStyle(
@@ -136,6 +196,7 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
                       height: 1.2,
                     ),
                   ),
+
                   if (m.tagline != null && m.tagline!.isNotEmpty) ...[
                     const SizedBox(height: 6),
                     Text(
@@ -147,30 +208,52 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
                       ),
                     ),
                   ],
+
                   const SizedBox(height: 14),
+
+                  // Meta Row (مختلف للفيلم والمسلسل)
                   Wrap(
                     spacing: 14,
                     runSpacing: 8,
                     children: [
-                      if (m.year.isNotEmpty) _metaItem(Icons.calendar_today_rounded, m.year),
-                      if (m.runtimeFormatted.isNotEmpty)
+                      if (m.year.isNotEmpty)
+                        _metaItem(Icons.calendar_today_rounded, m.year),
+
+                      // للفيلم: المدة
+                      if (!_isSeries && m.runtimeFormatted.isNotEmpty)
                         _metaItem(Icons.access_time_rounded, m.runtimeFormatted),
-                      if (m.numberOfSeasons != null && m.numberOfSeasons! > 0)
+
+                      // للمسلسل: عدد المواسم
+                      if (_isSeries && m.numberOfSeasons != null && m.numberOfSeasons! > 0)
                         _metaItem(Icons.layers_rounded, '${m.numberOfSeasons} مواسم'),
+
+                      // للمسلسل: عدد الحلقات
+                      if (_isSeries && m.numberOfEpisodes != null && m.numberOfEpisodes! > 0)
+                        _metaItem(Icons.playlist_play_rounded, '${m.numberOfEpisodes} حلقة'),
+
+                      // الحالة
+                      if (m.status != null && m.status!.isNotEmpty)
+                        _metaItem(Icons.info_outline_rounded, _translateStatus(m.status!)),
+
                       _metaItem(Icons.star_rounded, m.rating,
                           color: AppColors.rating),
                     ],
                   ),
+
                   const SizedBox(height: 18),
+
+                  // التصنيفات
                   if (m.genres.isNotEmpty)
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
-                      children: m.genres
-                          .map((g) => _genreChip(g.name))
-                          .toList(),
+                      children:
+                          m.genres.map((g) => _genreChip(g.name)).toList(),
                     ),
+
                   const SizedBox(height: 24),
+
+                  // القصة
                   if (m.overview != null && m.overview!.isNotEmpty) ...[
                     const _SectionTitle('القصة'),
                     const SizedBox(height: 10),
@@ -184,6 +267,8 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
                     ),
                     const SizedBox(height: 24),
                   ],
+
+                  // زر الترجمات
                   Row(
                     children: [
                       Expanded(
@@ -209,7 +294,26 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
                       ),
                     ],
                   ),
+
                   const SizedBox(height: 28),
+
+                  // ===== المواسم (للمسلسلات فقط) =====
+                  if (_isSeries && _seasons.isNotEmpty) ...[
+                    const _SectionTitle('المواسم'),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      height: 140,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: _seasons.length,
+                        itemBuilder: (context, i) =>
+                            _seasonCard(_seasons[i]),
+                      ),
+                    ),
+                    const SizedBox(height: 28),
+                  ],
+
+                  // طاقم العمل
                   if (m.cast.isNotEmpty) ...[
                     const _SectionTitle('طاقم العمل'),
                     const SizedBox(height: 12),
@@ -218,10 +322,7 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
                       child: ListView.builder(
                         scrollDirection: Axis.horizontal,
                         itemCount: m.cast.length,
-                        itemBuilder: (context, i) {
-                          final c = m.cast[i];
-                          return _castCard(c);
-                        },
+                        itemBuilder: (context, i) => _castCard(m.cast[i]),
                       ),
                     ),
                     const SizedBox(height: 30),
@@ -235,6 +336,7 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
     );
   }
 
+  // ===== Helpers =====
   Widget _metaItem(IconData icon, String text, {Color? color}) {
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -268,6 +370,85 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
           color: AppColors.textPrimary,
           fontWeight: FontWeight.w600,
         ),
+      ),
+    );
+  }
+
+  // ===== Season Card =====
+  Widget _seasonCard(Map<String, dynamic> season) {
+    final number = season['season_number'] ?? 0;
+    final name = season['name'] ?? 'الموسم $number';
+    final episodes = season['episode_count'] ?? 0;
+    final poster = season['poster_path'];
+    final posterUrl = poster == null
+        ? ''
+        : '${ApiConstants.tmdbImageBase}/w300$poster';
+
+    return Container(
+      width: 100,
+      margin: const EdgeInsets.only(left: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+            child: SizedBox(
+              width: 100,
+              height: 100,
+              child: posterUrl.isEmpty
+                  ? Container(
+                      color: AppColors.surfaceLight,
+                      child: Center(
+                        child: Text(
+                          'S$number',
+                          style: const TextStyle(
+                            color: AppColors.primaryLight,
+                            fontSize: 24,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    )
+                  : CachedNetworkImage(
+                      imageUrl: posterUrl,
+                      fit: BoxFit.cover,
+                      placeholder: (_, __) =>
+                          Container(color: AppColors.surfaceLight),
+                      errorWidget: (_, __, ___) => Container(
+                        color: AppColors.surfaceLight,
+                        child: Center(
+                          child: Text(
+                            'S$number',
+                            style: const TextStyle(
+                              color: AppColors.primaryLight,
+                              fontSize: 24,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          Text(
+            '$episodes حلقة',
+            style: const TextStyle(
+              fontSize: 11,
+              color: AppColors.textTertiary,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -331,6 +512,27 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
         ],
       ),
     );
+  }
+
+  String _translateStatus(String status) {
+    switch (status) {
+      case 'Returning Series':
+        return 'مستمر';
+      case 'Ended':
+        return 'منتهي';
+      case 'Canceled':
+        return 'ملغى';
+      case 'In Production':
+        return 'قيد الإنتاج';
+      case 'Planned':
+        return 'مُخطط له';
+      case 'Released':
+        return 'صدر';
+      case 'Post Production':
+        return 'ما بعد الإنتاج';
+      default:
+        return status;
+    }
   }
 
   void _showSubtitles(BuildContext context, MovieDetails m) {
@@ -433,7 +635,8 @@ class _SubtitlesSheetState extends State<_SubtitlesSheet> {
                   : ListView.builder(
                       padding: const EdgeInsets.all(AppSizes.paddingM),
                       itemCount: _subtitles.length,
-                      itemBuilder: (context, i) => _subtitleTile(_subtitles[i]),
+                      itemBuilder: (context, i) =>
+                          _subtitleTile(_subtitles[i]),
                     ),
     );
   }
@@ -447,7 +650,8 @@ class _SubtitlesSheetState extends State<_SubtitlesSheet> {
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: Container(
           width: 44,
           height: 44,

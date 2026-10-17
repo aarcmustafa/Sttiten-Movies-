@@ -83,7 +83,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
         autoPlay: true,
         looping: false,
         aspectRatio: _videoPlayerController.value.aspectRatio,
-        subtitle: _SubtitleWrapper(parsedSubs),
+        subtitle: Subtitles(parsedSubs),
         materialProgressColors: ChewieProgressColors(
           playedColor: AppColors.primary,
           handleColor: AppColors.primaryLight,
@@ -203,15 +203,3 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   }
 }
 
-class _SubtitleWrapper extends ClosedCaptionFile {
-  final List<Subtitle> _subs;
-  _SubtitleWrapper(this._subs);
-
-  @override
-  List<Caption> get captions => _subs.map((s) => Caption(
-    number: s.index,
-    start: s.start,
-    end: s.end,
-    text: s.text,
-  )).toList();
-}

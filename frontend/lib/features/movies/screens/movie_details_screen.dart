@@ -490,10 +490,10 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
           context,
           MaterialPageRoute(
             builder: (_) => EpisodesScreen(
-              seriesId: m.id,
+              seriesId: _movie!.id,
               seasonNumber: number,
               seasonName: name,
-              seriesTitle: m.title,
+              seriesTitle: _movie!.title,
             ),
           ),
         );

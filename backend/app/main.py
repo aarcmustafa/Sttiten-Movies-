@@ -12,20 +12,17 @@ logger = logging.getLogger("sttiten")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info(f"Starting {settings.APP_NAME}")
-    
-    # إنشاء الجداول في قاعدة البيانات عند بدء التشغيل
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     logger.info("Database tables created/verified.")
-
     yield
     logger.info("Shutting down")
 
 
 app = FastAPI(
     title=settings.APP_NAME,
-    description="API for Sttiten Movies - Arabic movie & series data",
-    version="0.3.0",
+    description="API for Sttiten Movies",
+    version="0.4.0",
     docs_url="/docs",
     lifespan=lifespan,
 )
@@ -38,18 +35,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# استدعاء المسارات
-from app.api.routes import movies, series, subtitles, favorites, person
+# استدعاء جميع المسارات
+from app.api.routes import movies, series, subtitles, favorites, person, streaming
 
 app.include_router(movies.router, prefix=settings.API_V1_PREFIX)
 app.include_router(series.router, prefix=settings.API_V1_PREFIX)
 app.include_router(subtitles.router, prefix=settings.API_V1_PREFIX)
 app.include_router(favorites.router, prefix=settings.API_V1_PREFIX)
 app.include_router(person.router, prefix=settings.API_V1_PREFIX)
+app.include_router(streaming.router, prefix=settings.API_V1_PREFIX)
 
 @app.get("/", tags=["Root"])
 async def root():
-    return {"app": settings.APP_NAME, "version": "0.3.0", "status": "running"}
+    return {"app": settings.APP_NAME, "version": "0.4.0", "status": "running"}
 
 @app.get("/health", tags=["Root"])
 async def health():

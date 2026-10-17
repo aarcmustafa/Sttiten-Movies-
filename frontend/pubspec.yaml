@@ -8,8 +8,8 @@ environment:
 
 dependencies:
   flutter:
-  flutter_localizations:
     sdk: flutter
+  flutter_localizations:
     sdk: flutter
   cupertino_icons: ^1.0.8
   dio: ^5.7.0
@@ -27,6 +27,7 @@ dependencies:
   chewie: ^1.8.5
   package_info_plus: ^8.1.2
   flutter_cache_manager: ^3.4.1
+  webview_flutter: ^4.7.0
   flutter_launcher_icons: ^0.14.2
 
 dev_dependencies:
@@ -35,8 +36,6 @@ dev_dependencies:
   flutter_lints: ^4.0.0
 
 flutter:
-  flutter_localizations:
-    sdk: flutter
   uses-material-design: true
   assets:
     - assets/images/

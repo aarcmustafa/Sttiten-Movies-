@@ -1,4 +1,3 @@
-from typing import Optional
 from fastapi import APIRouter, HTTPException, Query
 from app.services.tmdb import tmdb_service, TMDBError
 
@@ -8,7 +7,7 @@ router = APIRouter(prefix="/series", tags=["Series"])
 async def get_popular_series(page: int = Query(1, ge=1, le=500)):
     try:
         data = await tmdb_service.get_popular_series(page=page)
-        return {"page": data.get("page"), "total_pages": data.get("total_pages"), "results": data.get("results", [])}
+        return {"page": data.get("page"), "results": data.get("results", [])}
     except TMDBError as e:
         raise HTTPException(status_code=502, detail=str(e))
 
@@ -24,7 +23,7 @@ async def get_trending_series(time_window: str = Query("week", pattern="^(day|we
 async def search_series(q: str = Query(..., min_length=1), page: int = Query(1, ge=1, le=500)):
     try:
         data = await tmdb_service.search_series(query=q, page=page)
-        return {"page": data.get("page"), "total_results": data.get("total_results"), "results": data.get("results", [])}
+        return {"page": data.get("page"), "results": data.get("results", [])}
     except TMDBError as e:
         raise HTTPException(status_code=502, detail=str(e))
 

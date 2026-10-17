@@ -56,6 +56,10 @@ class TMDBService:
     async def get_top_rated_movies(self, page: int = 1):
         return await self._get("movie/top_rated", page=page)
 
+    async def get_free_movies(self, page: int = 1):
+        return await self._get("discover/movie", sort_by="popularity.desc",
+                               with_watch_monetization_types="free|ads", watch_region="US", page=page)
+
     async def get_movie_details(self, movie_id: int):
         return await self._get(f"movie/{movie_id}", append_to_response="credits,videos,recommendations")
 
@@ -68,39 +72,18 @@ class TMDBService:
     async def get_trending_series(self, time_window: str = "week"):
         return await self._get(f"trending/tv/{time_window}")
 
+    async def discover_series_by_language(self, language_code: str, page: int = 1):
+        return await self._get("discover/tv", sort_by="popularity.desc",
+                               with_original_language=language_code, page=page)
+
     async def get_series_details(self, series_id: int):
         return await self._get(f"tv/{series_id}", append_to_response="credits,videos,recommendations")
 
-    async def search_multi(self, query: str, page: int = 1):
-        return await self._get("search/multi", query=query, page=page)
-
-
-
+    async def get_season_details(self, series_id: int, season_number: int):
+        return await self._get(f"tv/{series_id}/season/{season_number}")
 
     async def search_series(self, query: str, page: int = 1):
         return await self._get("search/tv", query=query, page=page)
 
-
-        return await self._get(
-            "discover/tv",
-            sort_by="popularity.desc",
-            with_original_language=language_code,
-            page=page
-        )
-
-        return await self._get(
-            "discover/tv",
-            sort_by="popularity.desc",
-            with_original_language=language_code,
-            page=page
-        )
-
-    async def discover_series_by_language(self, language_code: str, page: int = 1):
-        return await self._get(
-            "discover/tv",
-            sort_by="popularity.desc",
-            with_original_language=language_code,
-            page=page
-        )
 
 tmdb_service = TMDBService()

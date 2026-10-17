@@ -41,8 +41,9 @@ class MoviesProvider extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
 
   Future<void> loadInitial() async {
-    await Future.wait([loadTrending(), loadPopular(refresh: true)]);
-    loadTopRated();
+    await loadTrending();
+    await loadPopular(refresh: true);
+    await loadTopRated();
   }
 
   Future<void> loadTrending() async {
@@ -50,7 +51,9 @@ class MoviesProvider extends ChangeNotifier {
     notifyListeners();
     try {
       final data = await _api.getTrendingMovies();
-      _trendingMovies = (data['results'] as List<dynamic>? ?? []).map((e) => Movie.fromJson(e)).toList();
+      _trendingMovies = (data['results'] as List<dynamic>? ?? [])
+          .map((e) => Movie.fromJson(e as Map<String, dynamic>))
+          .toList();
       _trendingState = LoadingState.loaded;
     } catch (e) {
       _errorMessage = _friendlyError(e);
@@ -69,26 +72,28 @@ class MoviesProvider extends ChangeNotifier {
       _isLoadingMorePopular = true;
       notifyListeners();
     }
-
     try {
       final data = await _api.getPopularMovies(page: _popularPage);
-      final list = (data['results'] as List<dynamic>? ?? []).map((e) => Movie.fromJson(e)).toList();
-      
+      final list = (data['results'] as List<dynamic>? ?? [])
+          .map((e) => Movie.fromJson(e as Map<String, dynamic>))
+          .toList();
       if (refresh) {
         _popularMovies = list;
         _popularState = LoadingState.loaded;
       } else {
         _popularMovies.addAll(list);
       }
-      
       _popularPage++;
-      _hasMorePopular = _popularPage <= (data['total_pages'] ?? 1);
-      
+      final totalPages = data['total_pages'];
+      if (totalPages is int) {
+        _hasMorePopular = _popularPage <= totalPages;
+      } else {
+        _hasMorePopular = false;
+      }
     } catch (e) {
       _errorMessage = _friendlyError(e);
       if (refresh) _popularState = LoadingState.error;
     }
-
     _isLoadingMorePopular = false;
     notifyListeners();
   }
@@ -98,7 +103,9 @@ class MoviesProvider extends ChangeNotifier {
     notifyListeners();
     try {
       final data = await _api.getTopRatedMovies();
-      _topRatedMovies = (data['results'] as List<dynamic>? ?? []).map((e) => Movie.fromJson(e)).toList();
+      _topRatedMovies = (data['results'] as List<dynamic>? ?? [])
+          .map((e) => Movie.fromJson(e as Map<String, dynamic>))
+          .toList();
       _topRatedState = LoadingState.loaded;
     } catch (e) {
       _topRatedState = LoadingState.error;
@@ -117,7 +124,9 @@ class MoviesProvider extends ChangeNotifier {
     notifyListeners();
     try {
       final data = await _api.searchMovies(query);
-      _searchResults = (data['results'] as List<dynamic>? ?? []).map((e) => Movie.fromJson(e)).toList();
+      _searchResults = (data['results'] as List<dynamic>? ?? [])
+          .map((e) => Movie.fromJson(e as Map<String, dynamic>))
+          .toList();
       _searchState = LoadingState.loaded;
     } catch (e) {
       _searchState = LoadingState.error;
@@ -132,7 +141,9 @@ class MoviesProvider extends ChangeNotifier {
   }
 
   Future<void> refreshAll() async {
-    await Future.wait([loadTrending(), loadPopular(refresh: true), loadTopRated()]);
+    await loadTrending();
+    await loadPopular(refresh: true);
+    await loadTopRated();
   }
 
   String _friendlyError(Object e) {

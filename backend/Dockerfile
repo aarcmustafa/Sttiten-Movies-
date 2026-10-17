@@ -13,6 +13,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     curl \
     libpq-dev \
+    ffmpeg \
+    nodejs \
+    npm \
     && rm -rf /var/lib/apt/lists/*
 
 # ============ Python Dependencies ============
@@ -26,7 +29,7 @@ COPY . .
 RUN useradd -m -u 1000 sttiten && chown -R sttiten:sttiten /app
 USER sttiten
 
-# ============ Hugging Face Port ============
+# ============ Expose Port ============
 EXPOSE 7860
 
 # ============ Healthcheck ============

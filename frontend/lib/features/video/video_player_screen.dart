@@ -5,7 +5,21 @@ import '../../core/constants.dart';
 class VideoPlayerScreen extends StatefulWidget {
   final String title;
   final String videoUrl;
-  const VideoPlayerScreen({super.key, required this.title, required this.videoUrl});
+  // إضافة المعلمات القديمة لتجنب أخطاء الاستدعاء
+  final int? tmdbId;
+  final String? mediaType;
+  final int? seasonNumber;
+  final int? episodeNumber;
+
+  const VideoPlayerScreen({
+    super.key,
+    required this.title,
+    required this.videoUrl,
+    this.tmdbId,
+    this.mediaType,
+    this.seasonNumber,
+    this.episodeNumber,
+  });
 
   @override
   State<VideoPlayerScreen> createState() => _VideoPlayerScreenState();
@@ -35,7 +49,10 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: AppBar(title: Text(widget.title)),
+      appBar: AppBar(
+        backgroundColor: AppColors.surface,
+        title: Text(widget.title),
+      ),
       body: Center(
         child: VlcPlayer(
           controller: _vlcController,

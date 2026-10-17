@@ -41,22 +41,18 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     ]);
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
 
-    // استخراج الترويسات وتمريرها لـ VLC
-    final referer = widget.headers?['Referer'] ?? widget.headers?['referer'] ?? 'https://core-latest-hogs.onrender.com/';
-    final userAgent = widget.headers?['User-Agent'] ?? widget.headers?['user-agent'] ?? 'Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36';
-
     _vlcController = VlcPlayerController.network(
       widget.videoUrl,
       hwAcc: HwAcc.full,
       autoPlay: true,
       options: VlcPlayerOptions(
-        http: VlcHttpOptions([
-          VlcHttpOptions.userAgent(userAgent),
-          VlcHttpOptions.referrer(referer),
+        advanced: VlcAdvancedOptions([
+          VlcAdvancedOptions.networkCaching(2000),
         ]),
       ),
     );
 
+    // إجبار الصوت على أقصى حد
     _vlcController.addListener(() {
       if (_vlcController.value.isInitialized) {
         _vlcController.setVolume(100);

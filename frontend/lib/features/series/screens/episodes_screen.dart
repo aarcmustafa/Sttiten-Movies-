@@ -1,11 +1,9 @@
-import '../../video/stream_loader_screen.dart';
-import '../../../core/page_transitions.dart';
-import '../../../core/constants.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import '../../../core/api_client.dart';
+import '../../../core/constants.dart';
 import '../../../shared/widgets/loading_indicator.dart';
-import '../../video/video_player_screen.dart';
+import '../../video/stream_loader_screen.dart';
 
 class EpisodesScreen extends StatefulWidget {
   final int seriesId;
@@ -75,12 +73,14 @@ class _EpisodesScreenState extends State<EpisodesScreen> {
                         onTap: () {
                           Navigator.push(
                             context,
-                            FadeSlidePageRoute(child: StreamLoaderScreen(
-                                title: '$name - $epNum',
+                            MaterialPageRoute(
+                              builder: (_) => StreamLoaderScreen(
                                 tmdbId: widget.seriesId,
+                                title: '$name - $epNum',
                                 mediaType: 'tv',
                                 season: widget.seasonNumber,
-                                episode: epNum,),
+                                episode: epNum,
+                              ),
                             ),
                           );
                         },

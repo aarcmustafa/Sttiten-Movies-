@@ -35,25 +35,20 @@ jobs:
         run: flutter clean
 
       - name: 📦 Install dependencies
-      - name: 🧹 Clean build cache
-        run: flutter clean
         run: flutter pub get
 
-      # ============ Phone builds ============
       - name: 📱 Build Phone ARM64
         run: flutter build apk --release --flavor phone --target-platform android-arm64
 
       - name: 📱 Build Phone ARMv7
         run: flutter build apk --release --flavor phone --target-platform android-arm
 
-      # ============ TV builds ============
       - name: 📺 Build TV ARM64
         run: flutter build apk --release --flavor tv --target-platform android-arm64
 
       - name: 📺 Build TV ARMv7
         run: flutter build apk --release --flavor tv --target-platform android-arm
 
-      # ============ Upload artifacts ============
       - name: 📤 Upload Phone APK
         uses: actions/upload-artifact@v4
         with:

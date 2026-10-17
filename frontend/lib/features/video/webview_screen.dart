@@ -19,28 +19,16 @@ class _WebViewScreenState extends State<WebViewScreen> {
   int _currentIndex = 0;
   Timer? _fallbackTimer;
 
-  // كود الجافاسكريبت لحظر الإعلانات والنوافذ المنبثقة
   final String _adBlockScript = """
     (function() {
-        // 1. منع النوافذ المنبثقة (Pop-ups)
         window.open = function() { return null; };
         window.alert = function() { return null; };
-        
-        // 2. إخفاء الإعلانات المعروفة (Ad Banners)
         setInterval(function() {
-            var adSelectors = [
-                'iframe[src*="ad"]', 'iframe[src*="banner"]', 
-                'div[class*="ad-"]', 'div[id*="ad-"]', 
-                '.adsbygoogle', 'a[href*="betting"]',
-                'div[class*="overlay"]', 'div[class*="popup"]'
-            ];
+            var adSelectors = ['iframe[src*="ad"]', 'div[class*="ad-"]', '.adsbygoogle', 'a[href*="betting"]', 'div[class*="popup"]'];
             adSelectors.forEach(function(sel) {
                 var elems = document.querySelectorAll(sel);
                 for (var i = 0; i < elems.length; i++) {
-                    // إخفاء العنصر مع إبقاء مساحة المشاهدة سليمة
-                    if(elems[i].tagName !== 'VIDEO') {
-                        elems[i].style.display = 'none';
-                    }
+                    if(elems[i].tagName !== 'VIDEO') elems[i].style.display = 'none';
                 }
             });
         }, 1000);
@@ -60,27 +48,23 @@ class _WebViewScreenState extends State<WebViewScreen> {
       ..setNavigationDelegate(
         NavigationDelegate(
           onPageStarted: (String url) {
-            if (mounted) setState(() => _isLoading = true);
+            // نبدأ المؤقت عند بدء التحميل
             _startFallbackTimer();
           },
-          onPageFinished: (String url) {
-            if (mounted) {
-              setState(() => _isLoading = false);
-              _injectAdBlockerAndCheck();
-            }
+          onPageFinished: (String url) async {
+            // ننتظر قليلاً ليقوم السكريبت داخل الموقع بتحميل الفيديو
+            await Future.delayed(const Duration(seconds: 2));
+            _injectAdBlockerAndCheck();
           },
           onNavigationRequest: (NavigationRequest request) {
-            // 3. منع الروابط الخارجية والإعلانات التي تحاول فتح المتصفح أو التطبيقات
             if (request.url.startsWith('intent://') || 
                 request.url.contains('play.google.com') || 
-                request.url.contains('apps.apple.com') ||
-                request.url.contains('about:blank')) {
+                request.url.contains('apps.apple.com')) {
               return NavigationDecision.prevent;
             }
             return NavigationDecision.navigate;
           },
           onWebResourceError: (WebResourceError error) {
-            debugPrint('WebView error: \${error.description}');
             _nextSource(); 
           },
         ),
@@ -90,37 +74,43 @@ class _WebViewScreenState extends State<WebViewScreen> {
 
   void _startFallbackTimer() {
     _fallbackTimer?.cancel();
-    _fallbackTimer = Timer(const Duration(seconds: 10), () {
+    // إذا لم يتم العثور على فيديو خلال 12 ثانية، ننتقل للمصدر التالي
+    _fallbackTimer = Timer(const Duration(seconds: 12), () {
       if (mounted && _isLoading) {
         _nextSource();
       }
     });
   }
 
-  // حقن كود حظر الإعلانات والتحقق من وجود الفيديو
   void _injectAdBlockerAndCheck() async {
-    _fallbackTimer?.cancel();
     try {
-      // حقن مانع الإعلانات
       await _controller.runJavaScript(_adBlockScript);
 
-      // فحص ما إذا كانت الصفحة تحتوي على الفيديو أم لا
+      // فحص دقيق: هل يوجد فيديو جاهز؟
       final result = await _controller.runJavaScriptReturningResult('''
         (function() {
+          var video = document.querySelector('video');
+          var iframe = document.querySelector('iframe');
           var text = document.body.innerText.toLowerCase();
-          var hasVideo = document.querySelector('video') !== null || document.querySelector('iframe') !== null;
-          if (!hasVideo || text.includes('not found') || text.includes('404') || text.includes('error')) {
-            return 'error';
+          
+          // إذا وجدنا فيديو أو إطار فيديو، ولم تكن الصفحة تحتوي على "not found"
+          if ((video || iframe) && !text.includes('not found') && !text.includes('404')) {
+            return 'success';
           }
-          return 'success';
+          return 'error';
         })();
       ''');
       
-      if (result.toString().contains('error')) {
+      if (result.toString().contains('success')) {
+        // نجحنا! نلغي المؤقت ونخفي شاشة التحميل
+        _fallbackTimer?.cancel();
+        if (mounted) setState(() => _isLoading = false);
+      } else {
+        // لم يجد فيديو، ينتقل للخلفية
         _nextSource();
       }
     } catch (e) {
-      debugPrint('JS injection failed: \$e');
+      _nextSource();
     }
   }
 
@@ -132,17 +122,23 @@ class _WebViewScreenState extends State<WebViewScreen> {
     if (_currentIndex < widget.urls.length - 1) {
       setState(() {
         _currentIndex++;
+        // نُبقي شاشة التحميل ظاهرة
         _isLoading = true;
       });
-      _initWebView();
+      _initWebView(); // تحميل المصدر التالي في الخلفية
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('عذراً، لم نجد مصدراً يعمل لهذا الفيلم حالياً. جرب فيلماً آخر.'),
-          backgroundColor: AppColors.error,
-        ),
-      );
-      Navigator.pop(context);
+      // فشلت كل المصادر
+      if (mounted) {
+        setState(() => _isLoading = false); // نُظهر الشاشة السوداء
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('عذراً، لم نجد رابطاً يعمل لهذا الفيلم حالياً.'),
+            backgroundColor: AppColors.error,
+            duration: Duration(seconds: 4),
+          ),
+        );
+        Navigator.pop(context); // الخروج للشاشة السابقة
+      }
     }
   }
 
@@ -163,30 +159,37 @@ class _WebViewScreenState extends State<WebViewScreen> {
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => Navigator.pop(context),
         ),
-        actions: [
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.only(left: 16),
-              child: Text(
-                'المصدر \${_currentIndex + 1}/\${widget.urls.length}',
-                style: const TextStyle(color: Colors.white54, fontSize: 12),
-              ),
-            ),
-          ),
-        ],
       ),
       body: Stack(
         children: [
+          // الـ WebView يعمل في الخلفية دائماً
           WebViewWidget(controller: _controller),
+          
+          // شاشة التحميل الأنيقة التي تغطي الـ WebView
           if (_isLoading)
-            const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(color: AppColors.primary),
-                  SizedBox(height: 16),
-                  Text('جاري البحث عن مصدر يعمل...', style: TextStyle(color: Colors.white)),
-                ],
+            Positioned.fill(
+              child: Container(
+                color: AppColors.background,
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const CircularProgressIndicator(
+                        color: AppColors.primary,
+                        strokeWidth: 3,
+                      ),
+                      const SizedBox(height: 24),
+                      Text(
+                        'جاري تجهيز الفيلم بأفضل جودة...',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.8),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
         ],

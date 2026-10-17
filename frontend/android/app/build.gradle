@@ -1,0 +1,74 @@
+plugins {
+    id "com.android.application"
+    id "kotlin-android"
+    id "dev.flutter.flutter-gradle-plugin"
+}
+
+android {
+    namespace = "com.sttiten.movies"
+    compileSdk = flutter.compileSdkVersion
+    ndkVersion = flutter.ndkVersion
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = "17"
+    }
+
+    defaultConfig {
+        applicationId = "com.sttiten.movies"
+        minSdk = 21
+        targetSdk = flutter.targetSdkVersion
+        versionCode = flutter.versionCode
+        versionName = flutter.versionName
+        multiDexEnabled = true
+    }
+
+    // ============ Product Flavors ============
+    flavorDimensions "device"
+
+    productFlavors {
+        // ===== للهاتف =====
+        phone {
+            dimension "device"
+            applicationId "com.sttiten.movies"
+            versionNameSuffix "-phone"
+            resValue "string", "app_name", "Sttiten Movies"
+        }
+
+        // ===== للتلفاز =====
+        tv {
+            dimension "device"
+            applicationId "com.sttiten.movies.tv"
+            versionNameSuffix "-tv"
+            resValue "string", "app_name", "Sttiten Movies TV"
+        }
+    }
+
+    // ============ ABIs (المعماريات) ============
+    // كل APK يدعم arm64 + armv7 معًا
+    // (يمكن توليد split لكل معمارية عند الحاجة)
+    splits {
+        abi {
+            enable false  // نُبقيها false لتوليد APK واحد لكل flavor
+            reset()
+            include "armeabi-v7a", "arm64-v8a"
+            universalApk false
+        }
+    }
+
+    buildTypes {
+        release {
+            signingConfig = signingConfigs.debug  // مؤقتًا
+            minifyEnabled = false
+            shrinkResources = false
+        }
+    }
+}
+
+flutter {
+    source = "../.."
+}

@@ -1,6 +1,6 @@
-import 'package:flutter/services.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import '../../core/constants.dart';
@@ -22,34 +22,17 @@ class _WebViewScreenState extends State<WebViewScreen> {
   Timer? _timeoutTimer;
   String _initialHost = '';
 
-  // User-Agent حقيقي (يتنكر كأنه Chrome على Android)
   static const String _realUserAgent =
       'Mozilla/5.0 (Linux; Android 13; SM-G991B) AppleWebKit/537.36 '
       '(KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36';
 
-  // قائمة النطاقات المحظورة (الإعلانات وصفحات البحث)
   static const List<String> _blockedHosts = [
-    'google.com',
-    'google.co',
-    'bing.com',
-    'yahoo.com',
-    'duckduckgo.com',
-    'yandex.com',
-    'baidu.com',
-    'play.google.com',
-    'apps.apple.com',
-    'instagram.com',
-    'facebook.com',
-    'twitter.com',
-    'tiktok.com',
-    'doubleclick.net',
-    'googlesyndication.com',
-    'googletagmanager.com',
-    'google-analytics.com',
-    'propellerads.com',
-    'popads.net',
-    'adsterra.com',
-    'onclickads.net',
+    'google.com', 'google.co', 'bing.com', 'yahoo.com', 'duckduckgo.com',
+    'yandex.com', 'baidu.com', 'play.google.com', 'apps.apple.com',
+    'instagram.com', 'facebook.com', 'twitter.com', 'tiktok.com',
+    'doubleclick.net', 'googlesyndication.com', 'googletagmanager.com',
+    'google-analytics.com', 'propellerads.com', 'popads.net',
+    'adsterra.com', 'onclickads.net',
   ];
 
   bool _isBlocked(String url) {
@@ -57,15 +40,9 @@ class _WebViewScreenState extends State<WebViewScreen> {
       final uri = Uri.parse(url);
       final host = uri.host.toLowerCase();
       if (host.isEmpty) return false;
-      
       for (final blocked in _blockedHosts) {
         if (host == blocked || host.endsWith('.$blocked')) return true;
       }
-      
-      // منع الروابط التي تحتوي على كلمات بحث
-      final path = uri.path.toLowerCase();
-      if (path.contains('/search') && !_initialHost.contains(uri.host)) return true;
-      
       return false;
     } catch (_) {
       return false;
@@ -75,7 +52,6 @@ class _WebViewScreenState extends State<WebViewScreen> {
   @override
   void initState() {
     super.initState();
-    // السماح بالتدوير الحر
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,
@@ -100,19 +76,19 @@ class _WebViewScreenState extends State<WebViewScreen> {
           onPageFinished: (_) {
             if (mounted) setState(() => _isLoading = false);
             _cancelTimeout();
-            _injectAntiRedirectScript();
+            // إعادة حقن الكود كل ثانية لمدة 10 ثوانٍ لضمان نجاحه
+            for (int i = 1; i <= 10; i++) {
+              Future.delayed(Duration(seconds: i), () {
+                _injectAntiRedirectScript();
+              });
+            }
           },
           onWebResourceError: (error) {
             if (mounted) setState(() => _isLoading = false);
             _cancelTimeout();
           },
           onNavigationRequest: (request) {
-            // منع أي رابط محظور
-            if (_isBlocked(request.url)) {
-              debugPrint('🚫 Blocked navigation: ${request.url}');
-              return NavigationDecision.prevent;
-            }
-            // منع الروابط التي تفتح متجر التطبيقات
+            if (_isBlocked(request.url)) return NavigationDecision.prevent;
             if (request.url.startsWith('intent://') ||
                 request.url.startsWith('market://') ||
                 request.url.contains('about:blank')) {
@@ -125,48 +101,61 @@ class _WebViewScreenState extends State<WebViewScreen> {
       ..loadRequest(Uri.parse(widget.url));
   }
 
-  // حقن جافاسكريبت لمنع الإعلانات والنوافذ المنبثقة
   Future<void> _injectAntiRedirectScript() async {
     try {
       await _controller.runJavaScript('''
         (function() {
-          // 1. منع window.open والنوافذ المنبثقة
-          window.open = function() { return null; };
-          window.alert = function() { return null; };
-          window.confirm = function() { return false; };
-          
-          // 2. اعتراض أي نقرة تذهب إلى موقع خارجي
-          document.addEventListener('click', function(e) {
-            var target = e.target.closest('a');
-            if (target && target.href) {
-              var href = target.href.toLowerCase();
-              if (href.includes('google') || href.includes('bing') || 
-                  href.includes('yahoo') || href.includes('play.google')) {
-                e.preventDefault();
-                e.stopPropagation();
-                return false;
+          try {
+            // 1. منع النوافذ المنبثقة
+            window.open = function() { return null; };
+            window.alert = function() { return null; };
+            window.confirm = function() { return false; };
+            
+            // 2. إجبار الصوت على العمل (الحل الجذري)
+            var videos = document.querySelectorAll('video, audio');
+            videos.forEach(function(v) {
+              v.muted = false;         // إلغاء الكتم
+              v.volume = 1.0;           // رفع الصوت إلى 100%
+              v.defaultMuted = false;   // منع الكتم الافتراضي
+              v.removeAttribute('muted');
+              if (v.paused) {
+                v.play().catch(function(e) {});
               }
-            }
-          }, true);
-          
-          // 3. إخفاء الإعلانات باستمرار
-          setInterval(function() {
-            var adSelectors = [
-              'iframe[src*="ad"]', 'iframe[src*="banner"]',
-              'div[class*="ad-"]', 'div[id*="ad-"]', 
-              '.adsbygoogle', 'a[href*="betting"]',
-              'div[class*="overlay"]', 'div[class*="popup"]',
-              'div[class*="modal"]', 'ins.adsbygoogle'
+            });
+            
+            // 3. البحث عن أزرار التشغيل والضغط عليها
+            var playSelectors = [
+              '.play-button', '.vjs-big-play-button', '.jw-icon-playback',
+              '[aria-label*="Play"]', '[aria-label*="play"]',
+              'button[title*="Play"]', '.play', '.btn-play'
             ];
-            adSelectors.forEach(function(sel) {
-              document.querySelectorAll(sel).forEach(function(el) {
-                if (el.tagName !== 'VIDEO' && el.tagName !== 'IFRAME' || 
-                    (el.tagName === 'IFRAME' && el.src && !el.src.includes('vidsrc') && !el.src.includes('embed'))) {
-                  el.style.display = 'none';
+            playSelectors.forEach(function(sel) {
+              var btn = document.querySelector(sel);
+              if (btn && btn.offsetParent !== null) {
+                btn.click();
+              }
+            });
+            
+            // 4. منع التوجيه لصفحات البحث
+            document.addEventListener('click', function(e) {
+              var t = e.target.closest('a');
+              if (t && t.href) {
+                var h = t.href.toLowerCase();
+                if (h.includes('google') || h.includes('bing') || h.includes('yahoo')) {
+                  e.preventDefault();
+                  e.stopPropagation();
                 }
+              }
+            }, true);
+            
+            // 5. إخفاء الإعلانات
+            var adSel = ['iframe[src*="ad"]', 'div[class*="ad-"]', '.adsbygoogle', 'ins.adsbygoogle'];
+            adSel.forEach(function(sel) {
+              document.querySelectorAll(sel).forEach(function(el) {
+                if (el.tagName !== 'VIDEO') el.style.display = 'none';
               });
             });
-          }, 500);
+          } catch(e) {}
         })();
       ''');
     } catch (e) {
@@ -174,21 +163,49 @@ class _WebViewScreenState extends State<WebViewScreen> {
     }
   }
 
+  // زر يدوي لرفع الصوت (في حال فشل الكود التلقائي)
+  Future<void> _forceUnmute() async {
+    try {
+      await _controller.runJavaScript('''
+        (function() {
+          var videos = document.querySelectorAll('video, audio');
+          videos.forEach(function(v) {
+            v.muted = false;
+            v.volume = 1.0;
+            if (v.paused) v.play().catch(function(){});
+          });
+          return 'ok';
+        })();
+      ''');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('🔊 تم تفعيل الصوت'),
+            backgroundColor: AppColors.success,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('فشل تفعيل الصوت: $e'), backgroundColor: AppColors.error),
+        );
+      }
+    }
+  }
+
   void _startTimeout() {
     _cancelTimeout();
     _timeoutTimer = Timer(const Duration(seconds: 20), () {
-      if (mounted && _isLoading) {
-        setState(() => _showTimeoutHelp = true);
-      }
+      if (mounted && _isLoading) setState(() => _showTimeoutHelp = true);
     });
   }
 
   void _cancelTimeout() {
     _timeoutTimer?.cancel();
     _timeoutTimer = null;
-    if (mounted && _showTimeoutHelp) {
-      setState(() => _showTimeoutHelp = false);
-    }
+    if (mounted && _showTimeoutHelp) setState(() => _showTimeoutHelp = false);
   }
 
   Future<void> _openInExternalBrowser() async {
@@ -200,7 +217,6 @@ class _WebViewScreenState extends State<WebViewScreen> {
 
   @override
   void dispose() {
-    // إعادة قفل الشاشة على العمودي
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,
@@ -225,7 +241,7 @@ class _WebViewScreenState extends State<WebViewScreen> {
         backgroundColor: Colors.black,
         appBar: AppBar(
           backgroundColor: AppColors.surface,
-          title: Text(widget.title),
+          title: Text(widget.title, style: const TextStyle(fontSize: 14)),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back_rounded),
             onPressed: () async {
@@ -237,6 +253,11 @@ class _WebViewScreenState extends State<WebViewScreen> {
             },
           ),
           actions: [
+            IconButton(
+              icon: const Icon(Icons.volume_up_rounded),
+              tooltip: 'تفعيل الصوت',
+              onPressed: _forceUnmute,
+            ),
             IconButton(
               icon: const Icon(Icons.open_in_browser_rounded),
               tooltip: 'فتح في المتصفح',
@@ -258,9 +279,7 @@ class _WebViewScreenState extends State<WebViewScreen> {
             WebViewWidget(controller: _controller),
             if (_isLoading)
               const Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
+                top: 0, left: 0, right: 0,
                 child: LinearProgressIndicator(
                   color: AppColors.primary,
                   backgroundColor: Colors.transparent,
@@ -269,31 +288,31 @@ class _WebViewScreenState extends State<WebViewScreen> {
             if (_showTimeoutHelp)
               Positioned.fill(
                 child: Container(
-                  color: Colors.black.withOpacity(0.85),
+                  color: Colors.black.withOpacity(0.9),
                   child: Center(
                     child: Padding(
                       padding: const EdgeInsets.all(24),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.wifi_off_rounded, color: AppColors.warning, size: 64),
+                          const Icon(Icons.volume_off_rounded, color: AppColors.warning, size: 64),
                           const SizedBox(height: 16),
                           const Text(
-                            'المصدر يبدو بطيئاً أو محظوراً',
-                            style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                            'لا يوجد صوت؟',
+                            style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
                             textAlign: TextAlign.center,
                           ),
                           const SizedBox(height: 8),
                           const Text(
-                            'يمكنك فتح الرابط في المتصفح الخارجي، أو تجربة مصدر آخر.',
+                            'اضغط على زر الصوت في الأعلى. إذا استمرت المشكلة، جرب مصدراً آخر.',
                             style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
                             textAlign: TextAlign.center,
                           ),
                           const SizedBox(height: 24),
                           ElevatedButton.icon(
-                            onPressed: _openInExternalBrowser,
-                            icon: const Icon(Icons.open_in_new_rounded),
-                            label: const Text('فتح في المتصفح الخارجي'),
+                            onPressed: _forceUnmute,
+                            icon: const Icon(Icons.volume_up_rounded),
+                            label: const Text('تفعيل الصوت الآن'),
                           ),
                           const SizedBox(height: 12),
                           OutlinedButton.icon(

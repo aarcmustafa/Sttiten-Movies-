@@ -32,6 +32,8 @@ jobs:
           cache: true
 
       - name: 📦 Install dependencies
+      - name: 🧹 Clean build cache
+        run: flutter clean
         run: flutter pub get
 
       # ============ Phone builds ============

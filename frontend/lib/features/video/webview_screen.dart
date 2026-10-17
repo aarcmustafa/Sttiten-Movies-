@@ -19,6 +19,34 @@ class _WebViewScreenState extends State<WebViewScreen> {
   int _currentIndex = 0;
   Timer? _fallbackTimer;
 
+  // كود الجافاسكريبت لحظر الإعلانات والنوافذ المنبثقة
+  final String _adBlockScript = """
+    (function() {
+        // 1. منع النوافذ المنبثقة (Pop-ups)
+        window.open = function() { return null; };
+        window.alert = function() { return null; };
+        
+        // 2. إخفاء الإعلانات المعروفة (Ad Banners)
+        setInterval(function() {
+            var adSelectors = [
+                'iframe[src*="ad"]', 'iframe[src*="banner"]', 
+                'div[class*="ad-"]', 'div[id*="ad-"]', 
+                '.adsbygoogle', 'a[href*="betting"]',
+                'div[class*="overlay"]', 'div[class*="popup"]'
+            ];
+            adSelectors.forEach(function(sel) {
+                var elems = document.querySelectorAll(sel);
+                for (var i = 0; i < elems.length; i++) {
+                    // إخفاء العنصر مع إبقاء مساحة المشاهدة سليمة
+                    if(elems[i].tagName !== 'VIDEO') {
+                        elems[i].style.display = 'none';
+                    }
+                }
+            });
+        }, 1000);
+    })();
+  """;
+
   @override
   void initState() {
     super.initState();
@@ -38,36 +66,50 @@ class _WebViewScreenState extends State<WebViewScreen> {
           onPageFinished: (String url) {
             if (mounted) {
               setState(() => _isLoading = false);
-              _checkIfVideoExists();
+              _injectAdBlockerAndCheck();
             }
+          },
+          onNavigationRequest: (NavigationRequest request) {
+            // 3. منع الروابط الخارجية والإعلانات التي تحاول فتح المتصفح أو التطبيقات
+            if (request.url.startsWith('intent://') || 
+                request.url.contains('play.google.com') || 
+                request.url.contains('apps.apple.com') ||
+                request.url.contains('about:blank')) {
+              return NavigationDecision.prevent;
+            }
+            return NavigationDecision.navigate;
           },
           onWebResourceError: (WebResourceError error) {
             debugPrint('WebView error: \${error.description}');
-            _nextSource(); // في حال فشل الاتصال بالموقع نهائياً
+            _nextSource(); 
           },
         ),
       )
       ..loadRequest(Uri.parse(widget.urls[_currentIndex]));
   }
 
-  // مؤقت: إذا استغرق التحميل أكثر من 8 ثوانٍ، ننتقل للمصدر التالي
   void _startFallbackTimer() {
     _fallbackTimer?.cancel();
-    _fallbackTimer = Timer(const Duration(seconds: 8), () {
+    _fallbackTimer = Timer(const Duration(seconds: 10), () {
       if (mounted && _isLoading) {
         _nextSource();
       }
     });
   }
 
-  // فحص الصفحة: إذا كانت تحتوي على كلمة "not found" أو فارغة، ننتقل تلقائياً
-  void _checkIfVideoExists() async {
+  // حقن كود حظر الإعلانات والتحقق من وجود الفيديو
+  void _injectAdBlockerAndCheck() async {
     _fallbackTimer?.cancel();
     try {
+      // حقن مانع الإعلانات
+      await _controller.runJavaScript(_adBlockScript);
+
+      // فحص ما إذا كانت الصفحة تحتوي على الفيديو أم لا
       final result = await _controller.runJavaScriptReturningResult('''
         (function() {
           var text = document.body.innerText.toLowerCase();
-          if (text.includes('not found') || text.includes('404') || text.includes('error') || text.length < 50) {
+          var hasVideo = document.querySelector('video') !== null || document.querySelector('iframe') !== null;
+          if (!hasVideo || text.includes('not found') || text.includes('404') || text.includes('error')) {
             return 'error';
           }
           return 'success';
@@ -78,11 +120,10 @@ class _WebViewScreenState extends State<WebViewScreen> {
         _nextSource();
       }
     } catch (e) {
-      debugPrint('JS check failed: \$e');
+      debugPrint('JS injection failed: \$e');
     }
   }
 
-  // الانتقال للمصدر التالي
   void _nextSource() {
     if (!mounted) return;
     
@@ -93,12 +134,11 @@ class _WebViewScreenState extends State<WebViewScreen> {
         _currentIndex++;
         _isLoading = true;
       });
-      _initWebView(); // إعادة تحميل المشغل بالرابط الجديد
+      _initWebView();
     } else {
-      // إذا فشلت جميع المصادر
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('عذراً، لم يتم العثور على مصدر يعمل لهذا الفيلم حالياً.'),
+          content: Text('عذراً، لم نجد مصدراً يعمل لهذا الفيلم حالياً. جرب فيلماً آخر.'),
           backgroundColor: AppColors.error,
         ),
       );

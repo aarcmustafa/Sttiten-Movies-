@@ -822,6 +822,7 @@ class _StreamsListScreenState extends State<_StreamsListScreen> {
   final _api = ApiClient();
   List<String> _urls = [];
   bool _loading = true;
+  String? _error;
 
   @override
   void initState() {
@@ -830,19 +831,36 @@ class _StreamsListScreenState extends State<_StreamsListScreen> {
   }
 
   Future<void> _loadStreams() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
       final urls = await _api.getStreamUrls(
         tmdbId: widget.tmdbId,
         mediaType: widget.mediaType,
         season: widget.season,
         episode: widget.episode,
-      );
+      ).timeout(const Duration(seconds: 15));
+      
+      
+      if (urls.isEmpty) {
+        setState(() {
+          _loading = false;
+          _error = 'لم يتم العثور على مصادر متاحة لهذا الفيلم';
+        });
+        return;
+      }
+      
       setState(() {
         _urls = urls;
         _loading = false;
       });
     } catch (e) {
-      setState(() => _loading = false);
+      setState(() {
+        _loading = false;
+        _error = e.toString();
+      });
     }
   }
 
@@ -852,10 +870,37 @@ class _StreamsListScreenState extends State<_StreamsListScreen> {
       backgroundColor: AppColors.background,
       appBar: AppBar(title: Text('اختر مصدر المشاهدة')),
       body: _loading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
-          : _urls.isEmpty
-              ? const Center(child: Text('لا توجد مصادر متاحة حالياً', style: TextStyle(color: Colors.white)))
-              : ListView.builder(
+          ? const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(color: AppColors.primary),
+                  SizedBox(height: 16),
+                  Text('جاري جلب المصادر...', style: TextStyle(color: Colors.white)),
+                ],
+              ),
+            )
+          : _error != null
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.error_outline, color: AppColors.error, size: 64),
+                        const SizedBox(height: 16),
+                        const SizedBox(height: 20),
+                        ElevatedButton(
+                          onPressed: _loadStreams,
+                          child: const Text('إعادة المحاولة'),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              : _urls.isEmpty
+                  ? const Center(child: Text('لا توجد مصادر متاحة حالياً', style: TextStyle(color: Colors.white)))
+                  : ListView.builder(
                   padding: const EdgeInsets.all(16),
                   itemCount: _urls.length,
                   itemBuilder: (context, index) {

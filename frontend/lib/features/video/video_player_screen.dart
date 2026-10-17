@@ -1,8 +1,8 @@
-import '../../core/constants.dart';
 import 'package:chewie/chewie.dart';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
-import '../../../core/api_client.dart';
+import '../../core/api_client.dart';
+import '../../core/constants.dart';
 
 class VideoPlayerScreen extends StatefulWidget {
   final String title;
@@ -62,7 +62,6 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   Future<void> _enableArabicSubtitle() async {
     setState(() => _isLoadingSub = true);
     try {
-      // 1. جلب قائمة الترجمات
       final data = await _api.searchSubtitles(
         tmdbId: widget.tmdbId, 
         mediaType: widget.mediaType,
@@ -72,22 +71,19 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
       final list = (data['data']?['subtitles'] as List<dynamic>? ?? []);
       if (list.isEmpty) throw 'لا توجد ترجمة متاحة';
 
-      // 2. تحميل أول ترجمة
       final firstSubUrl = list.first['url'];
       final srtBytes = await _api.downloadSubtitle(subtitlePath: firstSubUrl);
       final srtText = String.fromCharCodes(srtBytes);
 
-      // 3. تحويل SRT إلى List<Subtitle>
       final parsedSubs = _parseSrt(srtText);
 
-      // 4. إعادة بناء مشغل الفيديو مع الترجمة
       _chewieController?.dispose();
       _chewieController = ChewieController(
         videoPlayerController: _videoPlayerController,
         autoPlay: true,
         looping: false,
         aspectRatio: _videoPlayerController.value.aspectRatio,
-        subtitle: _SubtitleWrapper(parsedSubs), // ربط الترجمة
+        subtitle: _SubtitleWrapper(parsedSubs),
         materialProgressColors: ChewieProgressColors(
           playedColor: AppColors.primary,
           handleColor: AppColors.primaryLight,
@@ -113,7 +109,6 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     }
   }
 
-  // محرك تحويل ملف SRT إلى توقيتات
   List<Subtitle> _parseSrt(String srt) {
     final List<Subtitle> subs = [];
     final blocks = srt.trim().split(RegExp(r'\n\s*\n'));
@@ -126,7 +121,12 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
             final start = _parseTime(timeLine[0]);
             final end = _parseTime(timeLine[1]);
             final text = lines.sublist(2).join('\n');
-            subs.add(Subtitle(start: start, end: end, text: text));
+            subs.add(Subtitle(
+              index: subs.length + 1,
+              start: start, 
+              end: end, 
+              text: text
+            ));
           } catch (_) {}
         }
       }
@@ -166,7 +166,6 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
       ),
       body: Column(
         children: [
-          // مشغل الفيديو
           Expanded(
             child: Center(
               child: _chewieController != null && _chewieController!.videoPlayerController.value.isInitialized
@@ -178,7 +177,6 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
             ),
           ),
           
-          // شريط التحكم بالترجمة (تحت الفيديو)
           Container(
             padding: const EdgeInsets.all(16),
             color: AppColors.surface,
@@ -205,11 +203,15 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   }
 }
 
-// فئة مساعدة لربط الترجمة بـ Chewie
 class _SubtitleWrapper extends ClosedCaptionFile {
   final List<Subtitle> _subs;
   _SubtitleWrapper(this._subs);
 
   @override
-  List<Caption> get captions => []; // لا نحتاجه هنا
+  List<Caption> get captions => _subs.map((s) => Caption(
+    number: s.index,
+    start: s.start,
+    end: s.end,
+    text: s.text,
+  )).toList();
 }

@@ -799,6 +799,8 @@ class _SubtitlesSheetState extends State<_SubtitlesSheet> {
 }
 
 
+
+
 class _StreamsListScreen extends StatefulWidget {
   final int tmdbId;
   final String title;
@@ -820,46 +822,56 @@ class _StreamsListScreen extends StatefulWidget {
 
 class _StreamsListScreenState extends State<_StreamsListScreen> {
   final _api = ApiClient();
-  List<String> _urls = [];
   bool _loading = true;
   String? _error;
+  String? _hlsUrl;
+  List<String> _embedUrls = [];
 
   @override
   void initState() {
     super.initState();
-    _loadStreams();
+    _loadStream();
   }
 
-  Future<void> _loadStreams() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
+  Future<void> _loadStream() async {
     try {
-      final urls = await _api.getStreamUrls(
-        tmdbId: widget.tmdbId,
-        mediaType: widget.mediaType,
-        season: widget.season,
-        episode: widget.episode,
-      ).timeout(const Duration(seconds: 15));
-      
-      
-      if (urls.isEmpty) {
+      final data = await _api.dio.get(
+        '${ApiConstants.apiPrefix}/stream/${widget.tmdbId}',
+        queryParameters: {
+          'media_type': widget.mediaType,
+          'season': widget.season,
+          'episode': widget.episode,
+        },
+      ).timeout(const Duration(seconds: 20));
+
+      final type = data.data['type'];
+      if (type == 'hls' && data.data['url'] != null) {
         setState(() {
+          _hlsUrl = data.data['url'];
           _loading = false;
-          _error = 'لم يتم العثور على مصادر متاحة لهذا الفيلم';
         });
-        return;
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => VideoPlayerScreen(
+                title: widget.title,
+                tmdbId: widget.tmdbId,
+                mediaType: widget.mediaType,
+              ),
+            ),
+          );
+        }
+      } else if (type == 'embed') {
+        setState(() {
+          _embedUrls = List<String>.from(data.data['urls'] ?? []);
+          _loading = false;
+        });
       }
-      
-      setState(() {
-        _urls = urls;
-        _loading = false;
-      });
     } catch (e) {
       setState(() {
         _loading = false;
-        _error = e.toString();
+        _error = 'فشل جلب رابط المشاهدة، تأكد من اتصالك.';
       });
     }
   }
@@ -868,72 +880,44 @@ class _StreamsListScreenState extends State<_StreamsListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(title: Text('اختر مصدر المشاهدة')),
+      appBar: AppBar(title: Text(widget.title)),
       body: _loading
-          ? const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(color: AppColors.primary),
-                  SizedBox(height: 16),
-                  Text('جاري جلب المصادر...', style: TextStyle(color: Colors.white)),
-                ],
-              ),
-            )
+          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
           : _error != null
               ? Center(
                   child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.error_outline, color: AppColors.error, size: 64),
-                        const SizedBox(height: 16),
-                        const SizedBox(height: 20),
-                        ElevatedButton(
-                          onPressed: _loadStreams,
-                          child: const Text('إعادة المحاولة'),
-                        ),
-                      ],
-                    ),
+                    padding: const EdgeInsets.all(20),
                   ),
                 )
-              : _urls.isEmpty
-                  ? const Center(child: Text('لا توجد مصادر متاحة حالياً', style: TextStyle(color: Colors.white)))
+              : _embedUrls.isEmpty
+                  ? const Center(child: Text('لا توجد مصادر متاحة', style: TextStyle(color: Colors.white)))
                   : ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: _urls.length,
-                  itemBuilder: (context, index) {
-                    // استخراج اسم النطاق لعرضه (مثل vidsrc.to)
-                    final uri = Uri.parse(_urls[index]);
-                    final host = uri.host.isNotEmpty ? uri.host : 'مصدر ${index + 1}';
-
-                    return Card(
-                      color: AppColors.surfaceLight,
-                      margin: const EdgeInsets.only(bottom: 10),
-                      child: ListTile(
-                        leading: const Icon(Icons.play_circle_fill_rounded, color: AppColors.primary, size: 36),
-                        title: Text(
-                          'مصدر ${index + 1}: $host',
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                        ),
-                        subtitle: const Text('اضغط للتشغيل (قد يحتوي على إعلانات)', style: TextStyle(color: AppColors.textTertiary, fontSize: 12)),
-                        trailing: const Icon(Icons.arrow_forward_ios, color: Colors.white54, size: 16),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => WebViewScreen(
-                                title: widget.title,
-                                url: _urls[index],
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    );
-                  },
-                ),
+                      padding: const EdgeInsets.all(16),
+                      itemCount: _embedUrls.length,
+                      itemBuilder: (context, index) {
+                        final uri = Uri.parse(_embedUrls[index]);
+                        final host = uri.host;
+                        return Card(
+                          color: AppColors.surfaceLight,
+                          margin: const EdgeInsets.only(bottom: 10),
+                          child: ListTile(
+                            leading: const Icon(Icons.play_circle_fill_rounded, color: AppColors.primary, size: 36),
+                            title: Text('مصدر ${index + 1}: $host', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => WebViewScreen(
+                                    title: widget.title,
+                                    url: _embedUrls[index],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        );
+                      },
+                    ),
     );
   }
 }

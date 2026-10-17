@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart'; // إضافة دعم اللغة
 import 'package:provider/provider.dart';
 import 'core/theme.dart';
 import 'core/device_id.dart';
@@ -11,7 +12,6 @@ import 'features/favorites/providers/favorites_provider.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // عرض تفاصيل الخطأ بالكامل (Stack Trace) بدلاً من الشاشة البيضاء
   ErrorWidget.builder = (FlutterErrorDetails details) {
     return Material(
       color: Colors.black,
@@ -60,6 +60,12 @@ class SttitenMoviesApp extends StatelessWidget {
         theme: AppTheme.darkTheme,
         locale: const Locale('ar'),
         supportedLocales: const [Locale('ar'), Locale('en')],
+        // إضافة دعم اللغة العربية هنا:
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
         builder: (context, child) {
           return Directionality(
             textDirection: TextDirection.rtl,

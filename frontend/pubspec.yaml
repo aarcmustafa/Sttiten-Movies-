@@ -24,11 +24,11 @@ dependencies:
   audioplayers: ^6.1.0
   flutter_svg: ^2.0.16
   video_player: ^2.9.2
-  flutter_vlc_player: ^7.4.2
   chewie: ^1.8.5
   package_info_plus: ^8.1.2
   flutter_cache_manager: ^3.4.1
   webview_flutter: ^4.7.0
+  flutter_vlc_player: 7.4.2
   flutter_launcher_icons: ^0.14.2
 
 dev_dependencies:

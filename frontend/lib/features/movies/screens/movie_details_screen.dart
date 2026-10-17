@@ -1,10 +1,10 @@
+import '../../../core/constants.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/api_client.dart';
-import '../../../core/constants.dart';
 import '../../../shared/widgets/loading_indicator.dart';
 import '../../favorites/providers/favorites_provider.dart';
 import '../models/movie.dart';

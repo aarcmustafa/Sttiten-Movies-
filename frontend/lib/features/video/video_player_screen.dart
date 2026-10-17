@@ -126,7 +126,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
             final start = _parseTime(timeLine[0]);
             final end = _parseTime(timeLine[1]);
             final text = lines.sublist(2).join('\n');
-            subs.add(Subtitle(start, end, text));
+            subs.add(Subtitle(start: start, end: end, text: text));
           } catch (_) {}
         }
       }

@@ -211,5 +211,5 @@ class _SubtitleWrapper extends ClosedCaptionFile {
   _SubtitleWrapper(this._subs);
 
   @override
-  List<ClosedCaption> get captions => []; // لا نحتاجه هنا
+  List<Caption> get captions => []; // لا نحتاجه هنا
 }

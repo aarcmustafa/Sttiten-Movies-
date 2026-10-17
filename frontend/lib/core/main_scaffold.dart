@@ -1,3 +1,4 @@
+import 'constants.dart';
 import 'package:flutter/material.dart';
 import '../features/movies/screens/movies_screen.dart';
 import '../features/series/screens/series_screen.dart';

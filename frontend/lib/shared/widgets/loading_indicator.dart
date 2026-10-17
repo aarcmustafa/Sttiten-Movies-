@@ -1,3 +1,4 @@
+import '../../core/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../core/constants.dart';

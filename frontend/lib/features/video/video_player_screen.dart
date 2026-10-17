@@ -6,6 +6,7 @@ import '../../core/constants.dart';
 class VideoPlayerScreen extends StatefulWidget {
   final String title;
   final String videoUrl;
+  final Map<String, String>? headers;
   final int? tmdbId;
   final String? mediaType;
   final int? seasonNumber;
@@ -15,6 +16,7 @@ class VideoPlayerScreen extends StatefulWidget {
     super.key,
     required this.title,
     required this.videoUrl,
+    this.headers,
     this.tmdbId,
     this.mediaType,
     this.seasonNumber,
@@ -31,23 +33,30 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   @override
   void initState() {
     super.initState();
-    // السماح بالتدوير الحر
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,
       DeviceOrientation.landscapeLeft,
       DeviceOrientation.landscapeRight,
     ]);
-    // إخفاء شريط الحالة لشاشة سينمائية
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+
+    // استخراج الترويسات وتمريرها لـ VLC
+    final referer = widget.headers?['Referer'] ?? widget.headers?['referer'] ?? 'https://core-latest-hogs.onrender.com/';
+    final userAgent = widget.headers?['User-Agent'] ?? widget.headers?['user-agent'] ?? 'Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36';
 
     _vlcController = VlcPlayerController.network(
       widget.videoUrl,
       hwAcc: HwAcc.full,
       autoPlay: true,
+      options: VlcPlayerOptions(
+        http: VlcHttpOptions([
+          VlcHttpOptions.userAgent(userAgent),
+          VlcHttpOptions.referrer(referer),
+        ]),
+      ),
     );
-    
-    // إجبار الصوت على أقصى حد (100) عند بدء التشغيل
+
     _vlcController.addListener(() {
       if (_vlcController.value.isInitialized) {
         _vlcController.setVolume(100);
@@ -57,7 +66,6 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
 
   @override
   void dispose() {
-    // إعادة قفل الشاشة على العمودي عند الخروج
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,

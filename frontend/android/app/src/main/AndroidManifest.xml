@@ -3,13 +3,10 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
 
     <application
-        android:label="@string/app_name"
-        android:name="${applicationName}"
+        android:label="Sttiten Movies"
         android:icon="@mipmap/ic_launcher">
-        <meta-data android:name="flutterEmbedding" android:value="2" />
         <activity
             android:name=".MainActivity"
-            android:exported="true"
             android:exported="true"
             android:launchMode="singleTop"
             android:theme="@style/LaunchTheme"
@@ -28,8 +25,6 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
-        <meta-data android:name="flutterEmbedding" android:value="2" />
-        <meta-data android:name="flutterEmbedding" android:value="2" />
     </application>
     <queries>
         <intent>

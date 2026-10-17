@@ -11,17 +11,17 @@ import 'features/favorites/providers/favorites_provider.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // عرض الأخطاء على الشاشة بدلاً من الشاشة البيضاء
+  // عرض تفاصيل الخطأ بالكامل (Stack Trace) بدلاً من الشاشة البيضاء
   ErrorWidget.builder = (FlutterErrorDetails details) {
     return Material(
       color: Colors.black,
-      child: Center(
-        child: Padding(
+      child: SafeArea(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Text(
-            'حدث خطأ تقني:\n\n${details.exceptionAsString()}',
-            style: const TextStyle(color: Colors.red, fontSize: 14),
-            textAlign: TextAlign.center,
+            'حدث خطأ تقني:\n\n${details.exceptionAsString()}\n\nمكان الخطأ:\n${details.stack}',
+            style: const TextStyle(color: Colors.red, fontSize: 12, fontFamily: 'monospace'),
+            textDirection: TextDirection.ltr,
           ),
         ),
       ),

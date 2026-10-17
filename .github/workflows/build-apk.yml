@@ -1,0 +1,64 @@
+name: 📦 Build APKs (Phone + TV)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'frontend/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: ⬇️ Checkout code
+        uses: actions/checkout@v4
+
+      - name: ☕ Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: 🎯 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          channel: 'stable'
+          cache: true
+
+      - name: 📦 Install dependencies
+        run: flutter pub get
+
+      # ============ Phone builds ============
+      - name: 📱 Build Phone ARM64
+        run: flutter build apk --release --flavor phone --target-platform android-arm64
+
+      - name: 📱 Build Phone ARMv7
+        run: flutter build apk --release --flavor phone --target-platform android-arm
+
+      # ============ TV builds ============
+      - name: 📺 Build TV ARM64
+        run: flutter build apk --release --flavor tv --target-platform android-arm64
+
+      - name: 📺 Build TV ARMv7
+        run: flutter build apk --release --flavor tv --target-platform android-arm
+
+      # ============ Upload artifacts ============
+      - name: 📤 Upload Phone APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Sttiten-Phone-APK
+          path: frontend/build/app/outputs/flutter-apk/app-phone-release.apk
+          if-no-files-found: warn
+
+      - name: 📤 Upload TV APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Sttiten-TV-APK
+          path: frontend/build/app/outputs/flutter-apk/app-tv-release.apk
+          if-no-files-found: warn

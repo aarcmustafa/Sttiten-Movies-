@@ -5,7 +5,6 @@ import '../../core/constants.dart';
 class VideoPlayerScreen extends StatefulWidget {
   final String title;
   final String videoUrl;
-  // إضافة المعلمات القديمة لتجنب أخطاء الاستدعاء
   final int? tmdbId;
   final String? mediaType;
   final int? seasonNumber;

@@ -1,39 +1,60 @@
 import logging
-from typing import List
+import os
+from typing import Optional
+import httpx
 
 logger = logging.getLogger("sttiten.streaming")
 
+CINEPRO_API_URL = os.getenv("CINEPRO_API_URL", "https://core-latest-hogs.onrender.com")
+
 class StreamingService:
     def __init__(self):
-        pass
+        self.base_url = CINEPRO_API_URL.rstrip("/")
+        self.timeout = httpx.Timeout(30.0, connect=10.0)
 
-    async def get_stream_urls(self, tmdb_id: int, media_type: str = "movie", season: int = 1, episode: int = 1) -> List[str]:
-        urls = []
-        
+    async def get_stream(self, tmdb_id: int, media_type: str = "movie", season: int = 1, episode: int = 1) -> Optional[dict]:
         if media_type == "tv":
-            # للمسلسلات
-            urls = [
-                f"https://vidsrc.to/embed/tv/{tmdb_id}/{season}/{episode}",
-                f"https://vidsrc.pm/embed/tv/{tmdb_id}/{season}/{episode}",
-                f"https://vidfast.pro/tv/{tmdb_id}/{season}/{episode}",
-                f"https://vidlink.pro/tv/{tmdb_id}/{season}/{episode}",
-                f"https://vidsrc.net/embed/tv/{tmdb_id}/{season}/{episode}",
-                f"https://embed.su/embed/tv/{tmdb_id}/{season}/{episode}",
-                f"https://2embed.cc/embedtv/{tmdb_id}&s={season}&e={episode}",
-            ]
+            path = f"/v1/tv/{tmdb_id}/seasons/{season}/episodes/{episode}"
         else:
-            # للأفلام
-            urls = [
-                f"https://vidsrc.to/embed/movie/{tmdb_id}",
-                f"https://vidsrc.pm/embed/movie/{tmdb_id}",
-                f"https://vidfast.pro/movie/{tmdb_id}",
-                f"https://vidlink.pro/movie/{tmdb_id}",
-                f"https://vidsrc.net/embed/movie/{tmdb_id}",
-                f"https://embed.su/embed/movie/{tmdb_id}",
-                f"https://2embed.cc/embed/{tmdb_id}",
-            ]
-        
-        logger.info(f"Generated {len(urls)} streaming sources for {media_type} ID: {tmdb_id}")
-        return urls
+            path = f"/v1/movies/{tmdb_id}"
+
+        url = f"{self.base_url}{path}"
+        params = {"platform": "native"}
+
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                resp = await client.get(url, params=params)
+                resp.raise_for_status()
+                data = resp.json()
+
+            sources = data.get("sources") or []
+            if not sources:
+                logger.warning(f"CinePro returned no sources for {tmdb_id}")
+                return None
+
+            first = sources[0]
+            stream_url = first.get("url")
+            headers = first.get("headers") or {}
+
+            if not stream_url:
+                return None
+
+            if stream_url.startswith("/"):
+                stream_url = f"{self.base_url}{stream_url}"
+
+            return {
+                "type": "hls",
+                "url": stream_url,
+                "headers": headers,
+                "quality": first.get("quality"),
+                "provider": first.get("provider", {}).get("name") if isinstance(first.get("provider"), dict) else None,
+            }
+
+        except httpx.HTTPStatusError as e:
+            logger.error(f"CinePro HTTP error: {e.response.status_code}")
+            return None
+        except Exception as e:
+            logger.error(f"CinePro error: {e}")
+            return None
 
 streaming_service = StreamingService()

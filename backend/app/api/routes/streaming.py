@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, HTTPException
 from app.services.streaming import streaming_service
 
 router = APIRouter(prefix="/stream", tags=["Streaming"])
@@ -10,7 +10,9 @@ async def get_stream(
     season: int = Query(1, ge=1),
     episode: int = Query(1, ge=1),
 ):
-    urls = await streaming_service.get_stream_urls(
+    result = await streaming_service.get_stream(
         tmdb_id=tmdb_id, media_type=media_type, season=season, episode=episode
     )
-    return {"type": "embed", "urls": urls}
+    if not result:
+        raise HTTPException(status_code=404, detail="لا توجد مصادر متاحة لهذا المحتوى حالياً.")
+    return result

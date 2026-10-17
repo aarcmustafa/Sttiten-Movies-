@@ -106,6 +106,16 @@ class ApiClient {
     return res.data as Map<String, dynamic>;
   }
 
+  Future<Map<String, dynamic>> getTurkishSeries({int page = 1}) async {
+    final res = await _dio.get('${ApiConstants.apiPrefix}/series/turkish', queryParameters: {'page': page});
+    return res.data as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> getIndianSeries({int page = 1}) async {
+    final res = await _dio.get('${ApiConstants.apiPrefix}/series/indian', queryParameters: {'page': page});
+    return res.data as Map<String, dynamic>;
+  }
+
   // ============ Subtitles ============
   Future<Map<String, dynamic>> searchSubtitles({
     required int tmdbId,

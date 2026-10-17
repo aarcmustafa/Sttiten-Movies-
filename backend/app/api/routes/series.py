@@ -65,3 +65,21 @@ async def get_series_details(series_id: int):
         return data
     except TMDBError as e:
         raise HTTPException(status_code=502, detail=str(e))
+
+@router.get("/turkish")
+async def get_turkish_series(page: int = Query(1, ge=1)):
+    """المسلسلات التركية"""
+    try:
+        data = await tmdb_service.discover_series_by_language(language_code="tr", page=page)
+        return {"page": data.get("page"), "results": data.get("results", [])}
+    except TMDBError as e:
+        raise HTTPException(status_code=502, detail=str(e))
+
+@router.get("/indian")
+async def get_indian_series(page: int = Query(1, ge=1)):
+    """المسلسلات الهندية"""
+    try:
+        data = await tmdb_service.discover_series_by_language(language_code="hi", page=page)
+        return {"page": data.get("page"), "results": data.get("results", [])}
+    except TMDBError as e:
+        raise HTTPException(status_code=502, detail=str(e))

@@ -109,6 +109,46 @@ class _SeriesScreenState extends State<SeriesScreen> {
                   ),
                 ],
 
+
+                if (provider.turkishSeries.isNotEmpty) ...[
+                  const SliverToBoxAdapter(
+                    child: SectionTitle(title: 'الدراما التركية 🇹🇷'),
+                  ),
+                  SliverToBoxAdapter(
+                    child: SizedBox(
+                      height: AppSizes.cardHeight + 50,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.only(right: AppSizes.paddingM, left: AppSizes.paddingS),
+                        itemCount: provider.turkishSeries.length,
+                        itemBuilder: (context, i) {
+                          final s = provider.turkishSeries[i];
+                          return MovieCard(movie: s, onTap: () => _open(context, s.id));
+                        },
+                      ),
+                    ),
+                  ),
+                ],
+
+                if (provider.indianSeries.isNotEmpty) ...[
+                  const SliverToBoxAdapter(
+                    child: SectionTitle(title: 'الدراما الهندية 🇮🇳'),
+                  ),
+                  SliverToBoxAdapter(
+                    child: SizedBox(
+                      height: AppSizes.cardHeight + 50,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.only(right: AppSizes.paddingM, left: AppSizes.paddingS),
+                        itemCount: provider.indianSeries.length,
+                        itemBuilder: (context, i) {
+                          final s = provider.indianSeries[i];
+                          return MovieCard(movie: s, onTap: () => _open(context, s.id));
+                        },
+                      ),
+                    ),
+                  ),
+                ],
                 const SliverToBoxAdapter(child: SizedBox(height: 30)),
               ],
             ),

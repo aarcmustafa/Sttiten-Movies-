@@ -7,6 +7,11 @@ class SeriesProvider extends ChangeNotifier {
   final ApiClient _api = ApiClient();
 
   // Popular
+  List<Movie> _turkishSeries = [];
+  List<Movie> get turkishSeries => _turkishSeries;
+  List<Movie> _indianSeries = [];
+  List<Movie> get indianSeries => _indianSeries;
+
   List<Movie> _popularSeries = [];
   List<Movie> get popularSeries => _popularSeries;
 

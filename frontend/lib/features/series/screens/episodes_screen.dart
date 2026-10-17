@@ -75,12 +75,12 @@ class _EpisodesScreenState extends State<EpisodesScreen> {
                         onTap: () {
                           Navigator.push(
                             context,
-                            FadeSlidePageRoute(child: VideoPlayerScreen(
+                            FadeSlidePageRoute(child: StreamLoaderScreen(
                                 title: '$name - $epNum',
                                 tmdbId: widget.seriesId,
                                 mediaType: 'tv',
-                                seasonNumber: widget.seasonNumber,
-                                episodeNumber: epNum,),
+                                season: widget.seasonNumber,
+                                episode: epNum,),
                             ),
                           );
                         },

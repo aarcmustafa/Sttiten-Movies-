@@ -256,7 +256,7 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
                       onPressed: () {
                         Navigator.push(
                           context,
-                          FadeSlidePageRoute(child: VideoPlayerScreen(
+                          FadeSlidePageRoute(child: StreamLoaderScreen(
                           title: m.title,
                           tmdbId: m.id,
                           mediaType: _isSeries ? 'tv' : 'movie',),
@@ -460,7 +460,7 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
           context,
           FadeSlidePageRoute(child: EpisodesScreen(
               seriesId: _movie!.id,
-              seasonNumber: number,
+              season: number,
               seasonName: name,
               seriesTitle: _movie!.title,),
           ),
@@ -869,7 +869,7 @@ class _StreamsListScreenState extends State<_StreamsListScreen> {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (_) => VideoPlayerScreen(
+              builder: (_) => StreamLoaderScreen(
                 title: widget.title,
                 videoUrl: _hlsUrl!,
               ),

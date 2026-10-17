@@ -29,7 +29,9 @@ class _MoviesScreenState extends State<MoviesScreen> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 500) {
+    if (_scrollController.hasClients &&
+        _scrollController.position.pixels >=
+            _scrollController.position.maxScrollExtent - 500) {
       context.read<MoviesProvider>().loadPopular();
     }
   }
@@ -59,6 +61,8 @@ class _MoviesScreenState extends State<MoviesScreen> {
             );
           }
 
+          final hero = provider.heroMovie; // متغير آمن بدون علامة تعجب
+
           return RefreshIndicator(
             color: AppColors.primary,
             backgroundColor: AppColors.surface,
@@ -66,10 +70,10 @@ class _MoviesScreenState extends State<MoviesScreen> {
             child: CustomScrollView(
               controller: _scrollController,
               slivers: [
-                if (provider.heroMovie != null)
+                if (hero != null)
                   _HeroBanner(
-                    movie: provider.heroMovie!,
-                    onTap: () => _open(context, provider.heroMovie!.id),
+                    movie: hero,
+                    onTap: () => _open(context, hero.id),
                   ),
                 if (provider.trendingMovies.isNotEmpty) ...[
                   const SliverToBoxAdapter(
@@ -103,7 +107,8 @@ class _MoviesScreenState extends State<MoviesScreen> {
                   SliverToBoxAdapter(
                     child: SizedBox(
                       height: AppSizes.cardHeight + 50,
-                      child: provider.popularState == LoadingState.loading && provider.popularMovies.isEmpty
+                      child: provider.popularState == LoadingState.loading &&
+                              provider.popularMovies.isEmpty
                           ? ListView.builder(
                               scrollDirection: Axis.horizontal,
                               padding: const EdgeInsets.only(
@@ -135,7 +140,9 @@ class _MoviesScreenState extends State<MoviesScreen> {
                   const SliverToBoxAdapter(
                     child: Padding(
                       padding: EdgeInsets.all(16.0),
-                      child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+                      child: Center(
+                          child: CircularProgressIndicator(
+                              color: AppColors.primary)),
                     ),
                   ),
                 if (provider.topRatedMovies.isNotEmpty) ...[
@@ -199,12 +206,14 @@ class _HeroBanner extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            if (movie.backdropUrl.isNotEmpty)
+            if (movie.backdropUrl != null && movie.backdropUrl.isNotEmpty)
               Image.network(
                 movie.backdropUrl,
                 fit: BoxFit.cover,
                 errorBuilder: (_, __, ___) => Container(color: AppColors.surface),
-              ),
+              )
+            else
+              Container(color: AppColors.surface),
             DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -240,7 +249,7 @@ class _HeroBanner extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    movie.title,
+                    movie.title ?? '',
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -256,10 +265,10 @@ class _HeroBanner extends StatelessWidget {
                       const Icon(Icons.star_rounded, size: 16, color: AppColors.rating),
                       const SizedBox(width: 4),
                       Text(
-                        movie.rating,
+                        movie.rating ?? '0.0',
                         style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700),
                       ),
-                      if (movie.year.isNotEmpty) ...[
+                      if (movie.year != null && movie.year.isNotEmpty) ...[
                         const SizedBox(width: 14),
                         Text(
                           movie.year,
@@ -280,15 +289,6 @@ class _HeroBanner extends StatelessWidget {
                             padding: const EdgeInsets.symmetric(vertical: 14),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 10),
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: AppColors.surfaceLight,
-                          borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-                        ),
-                        child: const Icon(Icons.add_rounded, color: AppColors.textPrimary),
                       ),
                     ],
                   ),

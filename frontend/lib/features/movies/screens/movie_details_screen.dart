@@ -1,3 +1,4 @@
+import '../../qissat_ishq/qissat_ishq_screen.dart';
 import '../../video/stream_loader_screen.dart';
 import '../../video/webview_screen.dart';
 import '../../../core/page_transitions.dart';
@@ -339,6 +340,36 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
                     ],
                   ),
                   const SizedBox(height: 28),
+                  
+                  // زر البحث في قصة عشق (للمسلسلات فقط)
+                  if (_isSeries) ...[
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => QissatIshqScreen(searchQuery: m.title),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.search_rounded, color: AppColors.accent),
+                        label: const Text(
+                          'ابحث عن هذا المسلسل في قصة عشق',
+                          style: TextStyle(color: AppColors.accent, fontWeight: FontWeight.bold),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: AppColors.accent, width: 1.5),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                  ],
 
                   if (_isSeries && _seasons.isNotEmpty) ...[
                     const _SectionTitle('المواسم'),

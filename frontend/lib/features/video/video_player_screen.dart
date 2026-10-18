@@ -50,7 +50,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     _vlcController = VlcPlayerController.network(
       widget.videoUrl,
       // استخدام decode (أفضل من full) لتفادي تجمد الصورة
-      hwAcc: HwAcc.decode,
+      hwAcc: HwAcc.disabled,
       autoPlay: true,
       options: VlcPlayerOptions(
         advanced: VlcAdvancedOptions([

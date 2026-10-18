@@ -68,6 +68,12 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
         _movie = MovieDetails.fromJson(data);
         _loading = false;
       });
+      
+      // ✨ الخدعة: جلب الروابط في الخلفية بصمت لتسخين الكاش
+      _api.prefetchStream(
+        tmdbId: widget.movieId,
+        mediaType: _isSeries ? 'tv' : 'movie',
+      );
     } catch (e) {
       setState(() {
         _error = 'فشل تحميل التفاصيل';

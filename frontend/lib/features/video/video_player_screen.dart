@@ -49,12 +49,12 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   void _initializePlayer() {
     _vlcController = VlcPlayerController.network(
       widget.videoUrl,
-      // استخدام decode (أفضل من full) لتفادي تجمد الصورة
       hwAcc: HwAcc.disabled,
       autoPlay: true,
       options: VlcPlayerOptions(
         advanced: VlcAdvancedOptions([
-          VlcAdvancedOptions.networkCaching(2000),
+          // تقليل زمن التخزين المؤقت إلى 500 مللي ثانية لبدء أسرع
+          VlcAdvancedOptions.networkCaching(500),
         ]),
       ),
     );
@@ -73,8 +73,8 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     });
   }
 
-  // إعادة المحاولة بفك تشفير برمجي (SW decoding)
-  void _retryWithSoftwareDecoding() {
+  // إعادة المحاولة مع زمن تخزين مؤقت أعلى (في حال كان الإنترنت بطيئاً)
+  void _retryWithHighCache() {
     setState(() {
       _hasError = false;
       _errorMessage = '';
@@ -82,10 +82,11 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     _vlcController.dispose();
     _vlcController = VlcPlayerController.network(
       widget.videoUrl,
-      hwAcc: HwAcc.disabled, // فك تشفير برمجي بالكامل
+      hwAcc: HwAcc.disabled,
       autoPlay: true,
       options: VlcPlayerOptions(
         advanced: VlcAdvancedOptions([
+          // زيادة الكاش إلى 2000 مللي ثانية إذا كان الفيديو يتقطع
           VlcAdvancedOptions.networkCaching(2000),
         ]),
       ),
@@ -133,9 +134,9 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
             },
           ),
           IconButton(
-            icon: const Icon(Icons.hd_rounded),
-            tooltip: 'تجربة فك تشفير برمجي',
-            onPressed: _retryWithSoftwareDecoding,
+            icon: const Icon(Icons.settings_ethernet_rounded),
+            tooltip: 'تقليل التقطيع (زيادة الكاش)',
+            onPressed: _retryWithHighCache,
           ),
         ],
       ),
@@ -163,9 +164,9 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                     ),
                     const SizedBox(height: 24),
                     ElevatedButton.icon(
-                      onPressed: _retryWithSoftwareDecoding,
+                      onPressed: _retryWithHighCache,
                       icon: const Icon(Icons.refresh_rounded),
-                      label: const Text('تجربة فك التشفير البرمجي'),
+                      label: const Text('إعادة المحاولة (كاش أعلى)'),
                     ),
                   ],
                 ),
@@ -180,13 +181,12 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                 children: [
                   CircularProgressIndicator(color: AppColors.primary),
                   SizedBox(height: 16),
-                  Text('جاري تحميل الفيديو...', style: TextStyle(color: Colors.white70)),
+                  Text('جاري تشغيل الفيديو...', style: TextStyle(color: Colors.white70)),
                 ],
               ),
             );
           }
 
-          // فيديو جاهز - اعرضه مباشرة
           final aspect = (value.aspectRatio > 0 && value.aspectRatio.isFinite)
               ? value.aspectRatio
               : 16 / 9;

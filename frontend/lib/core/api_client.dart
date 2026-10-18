@@ -145,6 +145,30 @@ class ApiClient {
     return res.data as List<int>;
   }
 
+
+  // دالة الجلب المسبق (صامتة) لتسخين الذاكرة المؤقتة في السيرفر
+  Future<void> prefetchStream({
+    required int tmdbId,
+    String mediaType = 'movie',
+    int season = 1,
+    int episode = 1,
+  }) async {
+    try {
+      await _dio.get(
+        '\${ApiConstants.apiPrefix}/stream/\$tmdbId',
+        queryParameters: {
+          'media_type': mediaType,
+          'season': season,
+          'episode': episode,
+        },
+      ).timeout(const Duration(seconds: 60));
+      if (kDebugMode) debugPrint('✅ Prefetch completed for \$tmdbId');
+    } catch (e) {
+      // نتجاهل الأخطاء بصمت لأنها مجرد عملية جلب مسبق
+      if (kDebugMode) debugPrint('Prefetch failed (silent): \$e');
+    }
+  }
+
   // ============ Favorites ============
   Future<List<dynamic>> getFavorites() async {
     final res = await _dio.get('${ApiConstants.apiPrefix}/favorites/');

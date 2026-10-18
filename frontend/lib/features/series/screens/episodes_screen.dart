@@ -41,6 +41,18 @@ class _EpisodesScreenState extends State<EpisodesScreen> {
         _episodes = data.data['episodes'] ?? [];
         _loading = false;
       });
+      
+      // ✨ جلب مسبق للحلقة الأولى لتسريع التشغيل
+      if (_episodes.isNotEmpty) {
+        final firstEp = _episodes.first;
+        final epNum = firstEp['episode_number'] ?? 1;
+        _api.prefetchStream(
+          tmdbId: widget.seriesId,
+          mediaType: 'tv',
+          season: widget.seasonNumber,
+          episode: epNum,
+        );
+      }
     } catch (e) {
       setState(() => _loading = false);
     }

@@ -16,6 +16,8 @@ async def lifespan(app: FastAPI):
         await conn.run_sync(Base.metadata.create_all)
     logger.info("Database tables created/verified.")
     yield
+    from app.services.streaming import streaming_service
+    await streaming_service.close()
     logger.info("Shutting down")
 
 

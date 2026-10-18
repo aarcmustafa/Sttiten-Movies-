@@ -47,7 +47,7 @@ class _StreamLoaderScreenState extends State<StreamLoaderScreen> {
           'season': widget.season,
           'episode': widget.episode,
         },
-      ).timeout(const Duration(seconds: 30));
+      ).timeout(const Duration(seconds: 60));
 
       if (!mounted) return;
 

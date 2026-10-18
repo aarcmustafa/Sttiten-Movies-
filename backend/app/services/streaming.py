@@ -12,7 +12,8 @@ CINEPRO_API_URL = os.getenv("CINEPRO_API_URL", "https://core-latest-hogs.onrende
 class StreamingService:
     def __init__(self):
         self.base_url = CINEPRO_API_URL.rstrip("/")
-        self.timeout = httpx.Timeout(30.0, connect=10.0)
+        # زيادة المهلة إلى 60 ثانية لأن CinePro قد يكون نائماً
+        self.timeout = httpx.Timeout(60.0, connect=15.0)
 
     async def get_stream(self, tmdb_id: int, media_type: str = "movie", season: int = 1, episode: int = 1) -> Optional[dict]:
         if media_type == "tv":
@@ -41,7 +42,7 @@ class StreamingService:
             if not stream_url:
                 return None
 
-            # كود فك تشفير رابط البروكسي لاستخراج الرابط الحقيقي
+            # فك تشفير رابط البروكسي
             if "/v1/proxy?data=" in stream_url:
                 try:
                     parsed = urllib.parse.urlparse(stream_url)
@@ -58,6 +59,9 @@ class StreamingService:
                         headers = proxy_data["headers"]
                 except Exception as e:
                     logger.error(f"Failed to parse proxy URL: {e}")
+                    # خطة بديلة: استبدال localhost برابط CinePro العام
+                    stream_url = stream_url.replace("http://localhost:3000", self.base_url)
+                    stream_url = stream_url.replace("https://localhost:3000", self.base_url)
 
             return {
                 "type": "hls",
@@ -68,6 +72,9 @@ class StreamingService:
 
         except httpx.HTTPStatusError as e:
             logger.error(f"CinePro HTTP error: {e.response.status_code}")
+            return None
+        except httpx.TimeoutException:
+            logger.error("CinePro timeout error: Server is probably sleeping")
             return None
         except Exception as e:
             logger.error(f"CinePro error: {e}")

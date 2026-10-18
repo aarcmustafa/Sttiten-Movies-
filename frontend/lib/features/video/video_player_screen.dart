@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_vlc_player/flutter_vlc_player.dart';
@@ -7,20 +8,12 @@ class VideoPlayerScreen extends StatefulWidget {
   final String title;
   final String videoUrl;
   final Map<String, String>? headers;
-  final int? tmdbId;
-  final String? mediaType;
-  final int? seasonNumber;
-  final int? episodeNumber;
 
   const VideoPlayerScreen({
     super.key,
     required this.title,
     required this.videoUrl,
     this.headers,
-    this.tmdbId,
-    this.mediaType,
-    this.seasonNumber,
-    this.episodeNumber,
   });
 
   @override
@@ -31,6 +24,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   late VlcPlayerController _vlcController;
   bool _hasError = false;
   String _errorMessage = '';
+  Timer? _initTimeout;
 
   @override
   void initState() {
@@ -42,72 +36,56 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
       DeviceOrientation.landscapeRight,
     ]);
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-
     _initializePlayer();
   }
 
   void _initializePlayer() {
+    // استخراج الترويسات وتمريرها بأسلوب VLC CLI
+    final referer = widget.headers?['Referer'] ?? widget.headers?['referer'] ?? 'https://brightpathsignals.com/';
+    final userAgent = widget.headers?['User-Agent'] ?? widget.headers?['user-agent'] ?? 'Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36';
+
     _vlcController = VlcPlayerController.network(
       widget.videoUrl,
-      hwAcc: HwAcc.disabled,
+      hwAcc: HwAcc.full, // التسريع العتادي مهم جداً لمنع تقطيع الصورة
       autoPlay: true,
       options: VlcPlayerOptions(
         advanced: VlcAdvancedOptions([
-          // تقليل زمن التخزين المؤقت إلى 500 مللي ثانية لبدء أسرع
-          VlcAdvancedOptions.networkCaching(500),
+          '--network-caching=1500',
+          '--http-referrer=$referer',
+          '--http-user-agent=$userAgent',
         ]),
       ),
     );
 
+    // مهلة التهيئة (إذا لم يعمل الفيديو خلال 15 ثانية نعتبره فشل)
+    _initTimeout = Timer(const Duration(seconds: 15), () {
+      if (mounted && !_vlcController.value.isInitialized && !_hasError) {
+        setState(() {
+          _hasError = true;
+          _errorMessage = 'استغرق التحميل وقتاً طويلاً. قد يكون الرابط محمياً.';
+        });
+      }
+    });
+
     _vlcController.addListener(() {
       if (!mounted) return;
       if (_vlcController.value.isInitialized) {
+        _initTimeout?.cancel();
         _vlcController.setVolume(100);
       }
       if (_vlcController.value.hasError && !_hasError) {
+        _initTimeout?.cancel();
         setState(() {
           _hasError = true;
           _errorMessage = _vlcController.value.errorDescription ?? 'خطأ غير معروف';
         });
       }
     });
-  }
-
-  // إعادة المحاولة مع زمن تخزين مؤقت أعلى (في حال كان الإنترنت بطيئاً)
-  void _retryWithHighCache() {
-    setState(() {
-      _hasError = false;
-      _errorMessage = '';
-    });
-    _vlcController.dispose();
-    _vlcController = VlcPlayerController.network(
-      widget.videoUrl,
-      hwAcc: HwAcc.disabled,
-      autoPlay: true,
-      options: VlcPlayerOptions(
-        advanced: VlcAdvancedOptions([
-          // زيادة الكاش إلى 2000 مللي ثانية إذا كان الفيديو يتقطع
-          VlcAdvancedOptions.networkCaching(2000),
-        ]),
-      ),
-    );
-    _vlcController.addListener(() {
-      if (!mounted) return;
-      if (_vlcController.value.isInitialized) {
-        _vlcController.setVolume(100);
-      }
-      if (_vlcController.value.hasError && !_hasError) {
-        setState(() {
-          _hasError = true;
-          _errorMessage = _vlcController.value.errorDescription ?? 'خطأ غير معروف';
-        });
-      }
-    });
-    setState(() {});
   }
 
   @override
   void dispose() {
+    _initTimeout?.cancel();
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,
@@ -127,16 +105,10 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.replay_rounded),
-            tooltip: 'إعادة التشغيل',
             onPressed: () {
               _vlcController.seekTo(const Duration(seconds: 0));
               _vlcController.play();
             },
-          ),
-          IconButton(
-            icon: const Icon(Icons.settings_ethernet_rounded),
-            tooltip: 'تقليل التقطيع (زيادة الكاش)',
-            onPressed: _retryWithHighCache,
           ),
         ],
       ),
@@ -152,21 +124,14 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                   children: [
                     const Icon(Icons.error_outline, color: AppColors.error, size: 64),
                     const SizedBox(height: 16),
-                    const Text(
-                      'تعذر تشغيل الفيديو',
-                      style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
+                    const Text('تعذر تشغيل الفيديو', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
-                    Text(
-                      _errorMessage,
-                      style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
-                      textAlign: TextAlign.center,
-                    ),
+                    Text(_errorMessage, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12), textAlign: TextAlign.center),
                     const SizedBox(height: 24),
                     ElevatedButton.icon(
-                      onPressed: _retryWithHighCache,
-                      icon: const Icon(Icons.refresh_rounded),
-                      label: const Text('إعادة المحاولة (كاش أعلى)'),
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.arrow_back_rounded),
+                      label: const Text('العودة لاختيار جودة أخرى'),
                     ),
                   ],
                 ),
@@ -187,19 +152,14 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
             );
           }
 
-          final aspect = (value.aspectRatio > 0 && value.aspectRatio.isFinite)
-              ? value.aspectRatio
-              : 16 / 9;
-
+          final aspect = (value.aspectRatio > 0 && value.aspectRatio.isFinite) ? value.aspectRatio : 16 / 9;
           return Center(
             child: AspectRatio(
               aspectRatio: aspect,
               child: VlcPlayer(
                 controller: _vlcController,
                 aspectRatio: aspect,
-                placeholder: const Center(
-                  child: CircularProgressIndicator(color: AppColors.primary),
-                ),
+                placeholder: const Center(child: CircularProgressIndicator(color: AppColors.primary)),
               ),
             ),
           );

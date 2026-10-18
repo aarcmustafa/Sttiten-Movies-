@@ -1,11 +1,10 @@
 import logging
 import os
-from typing import Optional, List, Dict
+from typing import Optional
 import httpx
 
 logger = logging.getLogger("sttiten.streaming")
 
-# رابط CinePro الخاص بك
 CINEPRO_API_URL = os.getenv("CINEPRO_API_URL", "https://core-latest-hogs.onrender.com")
 
 class StreamingService:
@@ -30,18 +29,16 @@ class StreamingService:
 
             sources = data.get("sources") or []
             if not sources:
-                logger.warning(f"CinePro returned empty sources for {tmdb_id}")
                 return None
 
             fixed_sources = []
             for source in sources:
                 stream_url = source.get("url")
                 headers = source.get("headers") or {}
-                
                 if not stream_url:
                     continue
 
-                # إصلاح بسيط: استبدال localhost برابط CinePro العام
+                # نستخدم بروكسي CinePro (نستبدل localhost فقط)
                 stream_url = stream_url.replace("http://localhost:3000", self.base_url)
                 stream_url = stream_url.replace("https://localhost:3000", self.base_url)
                 stream_url = stream_url.replace("http://127.0.0.1:3000", self.base_url)
@@ -53,7 +50,6 @@ class StreamingService:
                     "provider": source.get("provider", {}).get("name", "Unknown") if isinstance(source.get("provider"), dict) else "Unknown",
                 })
 
-            # إزالة التكرار
             unique_sources = []
             seen = set()
             for s in fixed_sources:

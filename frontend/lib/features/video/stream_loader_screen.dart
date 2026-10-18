@@ -27,6 +27,7 @@ class _StreamLoaderScreenState extends State<StreamLoaderScreen> {
   final _api = ApiClient();
   bool _loading = true;
   String? _error;
+  List<Map<String, dynamic>> _sources = [];
 
   @override
   void initState() {
@@ -50,36 +51,19 @@ class _StreamLoaderScreenState extends State<StreamLoaderScreen> {
       ).timeout(const Duration(seconds: 60));
 
       if (!mounted) return;
+      final sources = response.data['sources'] as List<dynamic>? ?? [];
+      
+      if (sources.isEmpty) throw 'لا توجد جودات متاحة';
 
-      final url = response.data['url'] as String?;
-      final headers = response.data['headers'] as Map<String, dynamic>? ?? {};
-
-      if (url == null || url.isEmpty) {
-        throw 'لا توجد روابط متاحة';
-      }
-
-      // تحويل الترويسات إلى Map<String, String>
-      final Map<String, String> stringHeaders = headers.map(
-        (key, value) => MapEntry(key.toString(), value.toString()),
-      );
-
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => VideoPlayerScreen(
-              title: widget.title,
-              videoUrl: url,
-              headers: stringHeaders,
-            ),
-          ),
-        );
-      }
+      setState(() {
+        _sources = sources.cast<Map<String, dynamic>>();
+        _loading = false;
+      });
     } catch (e) {
       if (mounted) {
         setState(() {
           _loading = false;
-          _error = 'تعذر جلب رابط المشاهدة. قد يكون المحتوى غير متوفر حالياً.';
+          _error = 'تعذر جلب الجودات. تحقق من اتصالك أو جرب فيلماً آخر.';
         });
       }
     }
@@ -97,29 +81,60 @@ class _StreamLoaderScreenState extends State<StreamLoaderScreen> {
                 children: [
                   CircularProgressIndicator(color: AppColors.primary),
                   SizedBox(height: 20),
-                  Text('جاري البحث عن أفضل جودة...', style: TextStyle(color: Colors.white70)),
+                  Text('جاري جلب الجودات المتاحة...', style: TextStyle(color: Colors.white70)),
                 ],
               ),
             )
-          : Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.error_outline, color: AppColors.error, size: 64),
-                    const SizedBox(height: 16),
-                    Text(_error!, style: const TextStyle(color: Colors.white, fontSize: 16), textAlign: TextAlign.center),
-                    const SizedBox(height: 24),
-                    ElevatedButton.icon(
-                      onPressed: _load,
-                      icon: const Icon(Icons.refresh_rounded),
-                      label: const Text('إعادة المحاولة'),
+          : _error != null
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.error_outline, color: AppColors.error, size: 60),
+                        const SizedBox(height: 16),
+                        Text(_error!, style: const TextStyle(color: Colors.white, fontSize: 16), textAlign: TextAlign.center),
+                        const SizedBox(height: 24),
+                        ElevatedButton.icon(onPressed: _load, icon: const Icon(Icons.refresh_rounded), label: const Text('إعادة المحاولة')),
+                      ],
                     ),
-                  ],
+                  ),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: _sources.length,
+                  itemBuilder: (context, index) {
+                    final source = _sources[index];
+                    final quality = source['quality'] ?? 'HD';
+                    final provider = source['provider'] ?? 'مصدر';
+                    final url = source['url'] as String;
+                    final headers = (source['headers'] as Map<String, dynamic>?)?.map((k, v) => MapEntry(k.toString(), v.toString())) ?? {};
+
+                    return Card(
+                      color: AppColors.surfaceLight,
+                      margin: const EdgeInsets.only(bottom: 12),
+                      child: ListTile(
+                        leading: const Icon(Icons.play_circle_fill_rounded, color: AppColors.primary, size: 36),
+                        title: Text('جودة: $quality', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        subtitle: Text('المزود: $provider', style: const TextStyle(color: AppColors.textTertiary, fontSize: 12)),
+                        trailing: const Icon(Icons.arrow_forward_ios, color: Colors.white54, size: 16),
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => VideoPlayerScreen(
+                                title: widget.title,
+                                videoUrl: url,
+                                headers: headers,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    );
+                  },
                 ),
-              ),
-            ),
     );
   }
 }

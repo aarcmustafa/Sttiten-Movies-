@@ -10,7 +10,7 @@ async def get_stream(
     season: int = Query(1, ge=1),
     episode: int = Query(1, ge=1),
 ):
-    result = await streaming_service.get_stream(
+    result = await streaming_service.get_streams(
         tmdb_id=tmdb_id, media_type=media_type, season=season, episode=episode
     )
     if not result:
